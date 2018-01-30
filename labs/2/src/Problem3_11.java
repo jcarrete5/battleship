@@ -15,7 +15,7 @@ public class Problem3_11 {
 		Year y = Year.of(in.nextInt());
 		in.close();
 
-		System.out.println(m.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+		System.out.println(m.getDisplayName(TextStyle.FULL, Locale.US)
 			+ " " + y.toString() + " had " + m.length(y.isLeap()) + " days");
 	}
 }

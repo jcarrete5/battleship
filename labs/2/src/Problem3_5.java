@@ -14,8 +14,8 @@ public class Problem3_5 {
 		in.close();
 
 		System.out.println("Today is "
-				+ today.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
+				+ today.getDisplayName(TextStyle.FULL, Locale.US)
 				+ " and the future day is "
-				+ today.plus(future).getDisplayName(TextStyle.FULL, Locale.ENGLISH));
+				+ today.plus(future).getDisplayName(TextStyle.FULL, Locale.US));
 	}
 }

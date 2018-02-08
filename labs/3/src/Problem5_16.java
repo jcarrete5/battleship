@@ -9,7 +9,6 @@ public class Problem5_16 {
 		in.close();
 
 		StringBuilder builder = new StringBuilder();
-		long ms = System.currentTimeMillis();
 		int factor = 2;
 		while (n > 1) {
 			if (n % factor == 0) {
@@ -19,7 +18,6 @@ public class Problem5_16 {
 				factor = nextPrime(factor);
 			}
 		}
-		System.out.println("Took " + (System.currentTimeMillis() - ms) + "ms");
 		String output = builder.toString().trim().replace(" ", ", ");
 		System.out.println(output);
 	}

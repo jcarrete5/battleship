@@ -3,41 +3,41 @@ import java.util.Scanner;
 public class A1Paper {
 
 	public static void main(String[] args) {
-		// Pre-compute lengths (in meters) of the long sides of each type of paper
-		final double ROOT2 = Math.sqrt(2.0);
-		final double[] longSideLengths = new double[30];
-		longSideLengths[0] = Math.pow(2, -0.75);
-		for (int i = 1; i < longSideLengths.length; i++) {
-			longSideLengths[i] = (longSideLengths[i - 1] / 2) * ROOT2;
-		}
-
-		double tapeLen = 0.0;
-		double A2pct = 0.0;
+		final double NEEDED_A0PROP = 0.5;
+		double A0prop = 0.0;  // Proportion of A0 paper we currently have
+		double tapeLen = 0.0;  // Length of tape in meters
 		boolean possible = false;
 
 		Scanner in = new Scanner(System.in);
-		int n = in.nextInt();
-		for (int i = 0; i < n - 1; i++) {
+		final int N = in.nextInt();
+		for (int paperSize = 2; paperSize <= N; paperSize++) {
 			final int numSheets = in.nextInt();
-			final double sideLength = longSideLengths[i];
-			final double pct = Math.pow(2, -i - 1);
+			final double sideLength = longSideLength(paperSize);
+			final double prop = Math.pow(0.5, paperSize);  // Proportion of A0
 
-			int neededSheets = (int)((1.0 - A2pct) / pct);
+			final int neededSheets = (int)((NEEDED_A0PROP - A0prop) / prop);
+			tapeLen += neededSheets / 2 * sideLength;
 			if (neededSheets - numSheets <= 0) {
-				tapeLen += neededSheets / 2 * sideLength;
 				possible = true;
 				break;
 			}
 
-			tapeLen += neededSheets / 2 * sideLength;
-			A2pct += pct * numSheets;
+			A0prop += prop * numSheets;
 		}
 		in.close();
 
-		if (possible) {
-			System.out.println(tapeLen);
-		} else {
-			System.out.println("impossible");
-		}
+		System.out.println(possible ? tapeLen : "impossible");
+	}
+
+	/**
+	 * Computes the length of the longest side of a certain size
+	 * of A-series paper, A<sub>n</sub>.
+	 * @param n The size of the A-series paper.
+	 * @return The length of the longest side of A<sub>n</sub>
+	 */
+	private static double longSideLength(final int n) {
+		final double A0 = 1.189207115002721;
+		final double ROOT2ON2 = 0.7071067811865476;
+		return A0 * Math.pow(ROOT2ON2, n);
 	}
 }

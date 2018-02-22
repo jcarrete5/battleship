@@ -1,6 +1,6 @@
 apply plugin: 'org.hidetake.ssh'
 
-version = '0.0.0'
+version = serverVersion
 mainClassName = 'me.jcarrete.battleship.server.BattleshipServer'
 applicationName = "${appBaseName}Server"
 

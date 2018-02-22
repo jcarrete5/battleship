@@ -1,0 +1,30 @@
+plugins {
+    id 'org.hidetake.ssh' version '2.9.0'
+}
+
+allprojects {
+
+    group = 'me.jcarrete'
+
+    ext {
+        appBaseName = 'Battleship'
+        junitVersion = '4.12'
+        guavaVersion = '24.0-jre'
+    }
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+
+    apply plugin: 'application'
+
+    sourceCompatibility = 1.8
+
+    dependencies {
+        compile "com.google.guava:guava:$guavaVersion"
+        testCompile "junit:junit:$junitVersion"
+    }
+}

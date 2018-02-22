@@ -3,8 +3,7 @@ import java.util.Scanner;
 public class A1Paper {
 
 	public static void main(String[] args) {
-		final double NEEDED_A0PROP = 0.5;
-		double A0prop = 0.0;  // Proportion of A0 paper we currently have
+		int neededSheets = 2;
 		double tapeLen = 0.0;  // Length of tape in meters
 		boolean possible = false;
 
@@ -13,16 +12,15 @@ public class A1Paper {
 		for (int paperSize = 2; paperSize <= N; paperSize++) {
 			final int numSheets = in.nextInt();
 			final double sideLength = longSideLength(paperSize);
-			final double prop = Math.pow(0.5, paperSize);  // Proportion of A0
 
-			final int neededSheets = (int)((NEEDED_A0PROP - A0prop) / prop);
 			tapeLen += neededSheets / 2 * sideLength;
-			if (neededSheets - numSheets <= 0) {
+
+			if (numSheets >= neededSheets) {
 				possible = true;
 				break;
 			}
 
-			A0prop += prop * numSheets;
+			neededSheets = (neededSheets - numSheets) * 2;
 		}
 		in.close();
 

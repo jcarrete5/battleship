@@ -4,6 +4,13 @@ version = serverVersion
 mainClassName = 'me.jcarrete.battleship.server.BattleshipServer'
 applicationName = "${appBaseName}Server"
 
+jar {
+    manifest {
+        attributes('Implementation-Title': applicationName,
+                'Implementation-Version': version)
+    }
+}
+
 ssh.settings {
     knownHosts = addHostKey(file("${System.properties['user.home']}/.ssh/known_hosts"))
     fileTransfer = 'scp'

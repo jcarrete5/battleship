@@ -11,6 +11,8 @@ public class BattleshipClient extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
-
+		primaryStage.setTitle(BuildVersion.getImplTitle() + " v" + BuildVersion.getImplVersion());
+		primaryStage.show();
+		primaryStage.centerOnScreen();
 	}
 }

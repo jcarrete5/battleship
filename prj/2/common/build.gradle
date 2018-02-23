@@ -1,1 +1,4 @@
-version = 'unspecified'
+version = commonVersion
+jar {
+    archivesBaseName = "${appBaseName}Common"
+}

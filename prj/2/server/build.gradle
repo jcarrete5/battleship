@@ -5,6 +5,7 @@ mainClassName = 'me.jcarrete.battleship.server.BattleshipServer'
 applicationName = "${appBaseName}Server"
 
 jar {
+    archivesBaseName = applicationName
     manifest {
         attributes('Implementation-Title': applicationName,
                 'Implementation-Version': version)

@@ -10,6 +10,7 @@
 
     <Button fx:id="btnSingle" text="Singleplayer" GridPane.rowIndex="0" GridPane.halignment="CENTER"/>
 
-    <Button fx:id="btnMulti" text="Multiplayer" GridPane.rowIndex="1" GridPane.halignment="CENTER"/>
+    <Button fx:id="btnMulti" onAction="#onMultiPress" text="Multiplayer" GridPane.rowIndex="1"
+            GridPane.halignment="CENTER"/>
 
 </GridPane>

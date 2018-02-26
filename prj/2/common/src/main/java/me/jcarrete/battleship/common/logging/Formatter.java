@@ -1,4 +1,4 @@
-package me.jcarrete.battleship.server.logging;
+package me.jcarrete.battleship.common.logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

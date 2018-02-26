@@ -1,4 +1,4 @@
-package me.jcarrete.battleship.server.logging;
+package me.jcarrete.battleship.common.logging;
 
 import java.lang.management.ManagementFactory;
 import java.text.DateFormat;
@@ -25,6 +25,10 @@ public class LogFileFormatter extends Formatter {
 				.append(threadName)
 				.append('/')
 				.append(record.getLevel().getLocalizedName())
+				.append(']').append(' ').append('[')
+				.append(record.getSourceClassName())
+				.append('#')
+				.append(record.getSourceMethodName())
 				.append(']').append(':').append(' ')
 				.append(formatMessage(record))
 				.append('\n')

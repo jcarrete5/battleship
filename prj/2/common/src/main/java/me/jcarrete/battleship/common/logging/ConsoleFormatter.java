@@ -1,4 +1,4 @@
-package me.jcarrete.battleship.server.logging;
+package me.jcarrete.battleship.common.logging;
 
 import java.lang.management.ManagementFactory;
 import java.util.logging.LogRecord;

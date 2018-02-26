@@ -1,7 +1,7 @@
 package me.jcarrete.battleship.server;
 
-import me.jcarrete.battleship.server.logging.ConsoleFormatter;
-import me.jcarrete.battleship.server.logging.LogFileFormatter;
+import me.jcarrete.battleship.common.logging.ConsoleFormatter;
+import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +13,12 @@ public class BattleshipServer {
 
 	public static void main(String[] args) {
 		setupLogger();
+		logger.info("Test");
+		try {
+			throw new Exception("Error");
+		} catch (Exception e) {
+			logger.log(Level.FINE, "Error test", e);
+		}
 	}
 
 	private static void setupLogger() {

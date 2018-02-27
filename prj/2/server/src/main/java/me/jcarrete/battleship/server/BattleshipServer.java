@@ -105,7 +105,9 @@ public class BattleshipServer {
 				boolean hasTurn = Math.random() < 0.5;
 
 				try (DataOutputStream s1out = new DataOutputStream(s1.getOutputStream())) {
-					s1out.write(s2.getInetAddress().getAddress());
+					byte[] rawIp = s2.getInetAddress().getAddress();
+					s1out.writeInt(rawIp.length);
+					s1out.write(rawIp);
 					s1out.writeInt(s2.getPort());
 					s1out.writeBoolean(hasTurn);
 				} catch (IOException ex) {
@@ -115,7 +117,9 @@ public class BattleshipServer {
 				}
 
 				try (DataOutputStream s2out = new DataOutputStream(s2.getOutputStream())) {
-					s2out.write(s1.getInetAddress().getAddress());
+					byte[] rawIp = s1.getInetAddress().getAddress();
+					s2out.writeInt(rawIp.length);
+					s2out.write(rawIp);
 					s2out.writeInt(s1.getPort());
 					s2out.writeBoolean(!hasTurn);
 				} catch (IOException ex) {

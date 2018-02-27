@@ -46,6 +46,9 @@ public class BattleshipClient extends Application {
 		} catch (IOException e) {
 			LOGGER.log(Level.CONFIG, "Unable to setup FileHandler for 'logs/client-%g.log'", e);
 		}
+
+		Thread.setDefaultUncaughtExceptionHandler((thread, ex) ->
+				LOGGER.log(Level.SEVERE, "Uncaught exception on " + thread.getName() + " thread", ex));
 	}
 
 	@Override

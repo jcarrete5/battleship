@@ -3,11 +3,14 @@ package me.jcarrete.battleship.server;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.*;
 
 public class BattleshipServer {
@@ -19,6 +22,7 @@ public class BattleshipServer {
 		setupLogger();
 		Thread.setDefaultUncaughtExceptionHandler((thread, ex) ->
 				LOGGER.log(Level.SEVERE, "Uncaught exception on " + thread.getName() + " thread", ex));
+
 
 		try {
 			final ServerSocket serverSocket = new ServerSocket(PORT);
@@ -34,27 +38,97 @@ public class BattleshipServer {
 			serverSocket.setPerformancePreferences(1, 0, 0);
 			serverSocket.setSoTimeout(0);
 			LOGGER.fine("serverSocket connection details: " + serverSocket);
-			awaitConnections(serverSocket);
+
+			final BlockingQueue<Socket> connections = new LinkedBlockingQueue<>();
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				for (Socket s : connections) {
+					try {
+						if (!s.isClosed()) {
+							s.close();
+						}
+					} catch (IOException ex) {
+						LOGGER.log(Level.WARNING, "Failed to close a socket (" + s + ") during shutdown", ex);
+					}
+				}
+			}));
+			Thread connectionThread = new Thread(awaitConnections(serverSocket, connections));
+			Thread matchmakingThread = new Thread(matchmake(connections));
+			connectionThread.start();
+			matchmakingThread.start();
 		} catch (IOException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to open ServerSocket on port " + PORT, ex);
 			System.exit(1);
 		}
 	}
 
-	private static void awaitConnections(final ServerSocket serverSocket) {
-		LOGGER.info("Waiting for incoming connections");
-		while (true) {
-			try {
-				Socket socket = serverSocket.accept();
-				LOGGER.info("Received connection from " + socket.getInetAddress() + ":" + socket.getPort());
-				LOGGER.fine("New Socket: " + socket);
-				socket.close();
-			} catch (SocketException ex) {
-				LOGGER.log(Level.FINE, "serverSocket closed during serverSocket.accept()", ex);
-			} catch (IOException ex) {
-				LOGGER.log(Level.WARNING, "Failed to accept a connection", ex);
+	private static Runnable awaitConnections(final ServerSocket serverSocket, final BlockingQueue<Socket> connections) {
+		return () -> {
+			LOGGER.info("Waiting for incoming connections");
+
+			while (!Thread.interrupted()) {
+				try {
+					Socket socket = serverSocket.accept();
+					LOGGER.info("Received connection from " + socket.getInetAddress() + ":" + socket.getPort());
+					LOGGER.fine("New Socket: " + socket);
+					connections.add(socket);
+				} catch (SocketException ex) {
+					LOGGER.log(Level.FINE, "serverSocket closed during serverSocket.accept()", ex);
+				} catch (IOException ex) {
+					LOGGER.log(Level.WARNING, "Failed to accept a connection", ex);
+				}
 			}
-		}
+		};
+	}
+
+	private static Runnable matchmake(final BlockingQueue<Socket> connections) {
+		return () -> {
+			while (!Thread.interrupted()) {
+				Socket s1, s2;
+
+				try {
+					s1 = connections.take();
+				} catch (InterruptedException ex) {
+					LOGGER.log(Level.WARNING, "Interrupted while waiting for first player", ex);
+					Thread.currentThread().interrupt();
+					throw new RuntimeException(ex);
+				}
+
+				try {
+					s2 = connections.take();
+				} catch (InterruptedException ex) {
+					connections.add(s1); // Add first player back into queue
+					LOGGER.log(Level.WARNING, "Interrupted while waiting for a second player", ex);
+					Thread.currentThread().interrupt();
+					throw new RuntimeException(ex);
+				}
+
+				boolean hasTurn = Math.random() < 0.5;
+
+				try (DataOutputStream s1out = new DataOutputStream(s1.getOutputStream())) {
+					s1out.write(s2.getInetAddress().getAddress());
+					s1out.writeInt(s2.getPort());
+					s1out.writeBoolean(hasTurn);
+				} catch (IOException ex) {
+					connections.add(s2); // Add second player back into queue
+					LOGGER.log(Level.WARNING, "Failed to send all necessary data to first player", ex);
+					continue;
+				}
+
+				try (DataOutputStream s2out = new DataOutputStream(s2.getOutputStream())) {
+					s2out.write(s1.getInetAddress().getAddress());
+					s2out.writeInt(s1.getPort());
+					s2out.writeBoolean(!hasTurn);
+				} catch (IOException ex) {
+					connections.add(s1); // Add first player back into queue
+					LOGGER.log(Level.WARNING, "Failed to send all necessary data to second player", ex);
+					continue;
+				}
+
+				LOGGER.info("Connection made between "
+						+ s1.getInetAddress() + ":" + s1.getPort() + " and "
+						+ s2.getInetAddress() + ":" + s2.getPort());
+			}
+		};
 	}
 
 	private static void setupLogger() {

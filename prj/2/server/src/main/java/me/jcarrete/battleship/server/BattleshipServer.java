@@ -69,23 +69,12 @@ public class BattleshipServer {
 		consoleHandler.setErrorManager(new ErrorManager());
 		LOGGER.addHandler(consoleHandler);
 
-		// Setup FileHandlers
-		try {
-			new File("logs/").mkdirs();
-			FileHandler fileHandler = new FileHandler("logs/debug-%g.log", 50 * MB, 1);
-			fileHandler.setFormatter(new LogFileFormatter());
-			fileHandler.setLevel(Level.ALL);
-			fileHandler.setErrorManager(new ErrorManager());
-			LOGGER.addHandler(fileHandler);
-		} catch (IOException e) {
-			LOGGER.log(Level.CONFIG, "Unable to setup FileHandler 'logs/debug-%g.log'", e);
-		}
-
+		// Setup FileHandler
 		try {
 			new File("logs/").mkdirs();
 			FileHandler fileHandler = new FileHandler("logs/server-%g.log", 50 * MB, 1);
 			fileHandler.setFormatter(new LogFileFormatter());
-			fileHandler.setLevel(Level.CONFIG);
+			fileHandler.setLevel(Level.ALL);
 			fileHandler.setErrorManager(new ErrorManager());
 			LOGGER.addHandler(fileHandler);
 		} catch (IOException e) {

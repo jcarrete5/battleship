@@ -6,6 +6,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
@@ -62,12 +63,14 @@ public class BattleshipClient extends Application {
 	}
 
 	@FXML
-	private void onMultiPress(ActionEvent event) {
+	private void onMultiPress() {
 		try {
 			Socket socket = new Socket(InetAddress.getLocalHost(), 10000);
 			socket.close();
 		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "Failed to establish a connection to server", e);
+			String msg = "Failed to establish a connection to server";
+			LOGGER.log(Level.SEVERE, msg, e);
+			new Alert(Alert.AlertType.ERROR, msg).showAndWait();
 		}
 	}
 }

@@ -4,3 +4,4 @@ out/
 *.ini
 *.class
 .idea/
+*.iml

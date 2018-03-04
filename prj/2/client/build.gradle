@@ -1,4 +1,11 @@
-version = '0.0.0'
-
+version = clientVersion
 mainClassName = 'me.jcarrete.battleship.client.BattleshipClient'
 applicationName = "${appBaseName}Client"
+
+jar {
+    archivesBaseName = applicationName
+    manifest {
+        attributes('Implementation-Title': applicationName,
+                'Implementation-Version': version)
+    }
+}

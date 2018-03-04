@@ -19,12 +19,34 @@ allprojects {
 
 subprojects {
 
-    apply plugin: 'application'
+    apply plugin: 'java'
 
     sourceCompatibility = 1.8
 
     dependencies {
         compile "com.google.guava:guava:$guavaVersion"
         testCompile "junit:junit:$junitVersion"
+    }
+}
+
+project(':common') {
+
+}
+
+project(':client') {
+
+    apply plugin: 'application'
+
+    dependencies {
+        compile project(':common')
+    }
+}
+
+project(':server') {
+
+    apply plugin: 'application'
+
+    dependencies {
+        compile project(':common')
     }
 }

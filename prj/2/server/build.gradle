@@ -1,8 +1,16 @@
 apply plugin: 'org.hidetake.ssh'
 
-version = '0.0.0'
+version = serverVersion
 mainClassName = 'me.jcarrete.battleship.server.BattleshipServer'
 applicationName = "${appBaseName}Server"
+
+jar {
+    archivesBaseName = applicationName
+    manifest {
+        attributes('Implementation-Title': applicationName,
+                'Implementation-Version': version)
+    }
+}
 
 ssh.settings {
     knownHosts = addHostKey(file("${System.properties['user.home']}/.ssh/known_hosts"))

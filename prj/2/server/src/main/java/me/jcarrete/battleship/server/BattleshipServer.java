@@ -51,8 +51,9 @@ public class BattleshipServer {
 					}
 				}
 			}));
-			Thread connectionThread = new Thread(awaitConnections(serverSocket, connections));
-			Thread matchmakingThread = new Thread(matchmake(connections));
+			Thread connectionThread = new Thread(awaitConnections(serverSocket, connections), "Await Connections " +
+					"Thread");
+			Thread matchmakingThread = new Thread(matchmake(connections), "Matchmaking Thread");
 			connectionThread.start();
 			matchmakingThread.start();
 		} catch (IOException ex) {

@@ -22,7 +22,7 @@ public class BattleshipServer {
 		setupLogger();
 		Thread.setDefaultUncaughtExceptionHandler((thread, ex) ->
 				LOGGER.log(Level.SEVERE, "Uncaught exception on " + thread.getName() + " thread", ex));
-		
+
 		try {
 			final ServerSocket serverSocket = new ServerSocket(PORT);
 			Runtime.getRuntime().addShutdownHook(new Thread(() -> {

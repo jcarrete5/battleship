@@ -9,17 +9,15 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import me.jcarrete.battleship.client.net.ServerConnection;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
-import javax.swing.event.HyperlinkEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -74,45 +72,52 @@ public class BattleshipClient extends Application {
 	private void onMultiPress(ActionEvent event) {
 		event.consume();
 		try (ServerConnection conn = ServerConnection.connectToGameServer(InetAddress.getLocalHost(), 10000)) {
-			conn.findPartner().thenAcceptAsync(partner -> {
-				LOGGER.info("PartnerConnection ip is " + partner.getInetAddress().getHostAddress() + ":" + partner.getPort());
-				conn.getHasTurn().thenAccept(hasTurn -> {
-					LOGGER.info(hasTurn ? "It is my turn" : "It is not my turn");
-					//TODO Switch to a game screen with turn player info and partner connection
-				}).exceptionally(ex -> {
-					String msg = "Failed to determine who starts";
-					LOGGER.log(Level.WARNING, msg, ex);
-					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-					return null;
-				});
+			Dialog<Void> loadingDialog = new Dialog<>();
 
-				// *** This is temporary ***
-				try {
-					partner.close();
-				} catch (IOException ex) {
-					LOGGER.log(Level.SEVERE, "Failed to close partner", ex);
+			conn.getHasTurn().thenAcceptAsync(hasTurn -> {
+				if (hasTurn) {
+					// I am host so open a ServerSocket and wait for partner to connect
+					conn.listenForPartner();
+				} else {
+					// I am not host so attempt to connect to my partner
+					conn.connectToPartner();
 				}
-				// *************************
 			}).exceptionally(ex -> {
-				String msg = "Failed to find a partner";
+				String msg = "Failed to determine who starts";
 				LOGGER.log(Level.WARNING, msg, ex);
 				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-				//TODO Might want to clean up some stuff with the UI
 				return null;
 			});
 
-			//TODO Give the user visual feedback that we are waiting for a player ...
-//			Dialog<Void> loadingDialog = new Dialog<>();
-//			loadingDialog.initOwner(((Node)event.getTarget()).getScene().getWindow());
-//			loadingDialog.initModality(Modality.WINDOW_MODAL);
-//			loadingDialog.setContentText("Waiting for a player...");
-//			ProgressIndicator progress = new ProgressIndicator();
-//			Button btnCancel = new Button("Cancel");
-//			btnCancel.setOnAction(action -> {
-//
+//			conn.findPartner().thenAcceptAsync(partner -> {
+//				LOGGER.info("PartnerConnection ip is " + partner.getInetAddress().getHostAddress() + ":" +
+//						partner.getPort());
+//				conn.getHasTurn().thenAccept(hasTurn -> {
+//					LOGGER.info(hasTurn ? "It is my turn" : "It is not my turn");
+//					loadingDialog.close();
+//					//TODO Switch to a game screen with turn player info and partner connection
+//				}).exceptionally(ex -> {
+//					String msg = "Failed to determine who starts";
+//					LOGGER.log(Level.WARNING, msg, ex);
+//					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+//					return null;
+//				});
+//			}).exceptionally(ex -> {
+//				String msg = "Failed to find a partner";
+//				LOGGER.log(Level.WARNING, msg, ex);
+//				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+//				//TODO Might want to clean up some stuff with the UI
+//				return null;
 //			});
-//			loadingDialog.getDialogPane().setContent(new VBox(progress, btnCancel));
-//			loadingDialog.showAndWait();
+
+			// Display dialog while waiting for a partner
+			loadingDialog.initOwner(((Node)event.getTarget()).getScene().getWindow());
+			loadingDialog.initModality(Modality.WINDOW_MODAL);
+			loadingDialog.setContentText("Waiting for a player...");
+			ProgressIndicator progress = new ProgressIndicator();
+			loadingDialog.getDialogPane().setContent(progress);
+			loadingDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL);
+			loadingDialog.showAndWait();
 		} catch (IOException e) {
 			String msg = "Failed to establish a connection to server";
 			LOGGER.log(Level.WARNING, msg, e);

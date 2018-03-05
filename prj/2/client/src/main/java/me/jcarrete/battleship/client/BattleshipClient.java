@@ -18,7 +18,6 @@ import me.jcarrete.battleship.client.net.ServerConnection;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
-import java.awt.geom.Path2D;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;

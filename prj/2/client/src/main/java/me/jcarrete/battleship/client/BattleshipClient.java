@@ -18,6 +18,7 @@ import me.jcarrete.battleship.client.net.ServerConnection;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
+import java.awt.geom.Path2D;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -71,44 +72,25 @@ public class BattleshipClient extends Application {
 	@FXML
 	private void onMultiPress(ActionEvent event) {
 		event.consume();
+		Dialog<Void> loadingDialog = new Dialog<>();
 		try (ServerConnection conn = ServerConnection.connectToGameServer(InetAddress.getLocalHost(), 10000)) {
-			Dialog<Void> loadingDialog = new Dialog<>();
-
-			conn.getHasTurn().thenAcceptAsync(hasTurn -> {
-				if (hasTurn) {
-					// I am host so open a ServerSocket and wait for partner to connect
-					conn.listenForPartner();
-				} else {
-					// I am not host so attempt to connect to my partner
-					conn.connectToPartner();
-				}
-			}).exceptionally(ex -> {
+			conn.isHost().thenAccept(isHost ->
+				conn.findPartner(isHost).thenAccept(partner -> {
+					//TODO Switch to a game screen with the partner connection
+					LOGGER.info("Found a partner with address " + partner.remoteAddressAndPortAsString());
+					LOGGER.info("Starting game");
+				}).exceptionally(ex -> {
+					String msg = "Failed to find a partner";
+					LOGGER.log(Level.WARNING, msg, ex);
+					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+					return null;
+				})
+			).exceptionally(ex -> {
 				String msg = "Failed to determine who starts";
 				LOGGER.log(Level.WARNING, msg, ex);
 				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
 				return null;
-			});
-
-//			conn.findPartner().thenAcceptAsync(partner -> {
-//				LOGGER.info("PartnerConnection ip is " + partner.getInetAddress().getHostAddress() + ":" +
-//						partner.getPort());
-//				conn.getHasTurn().thenAccept(hasTurn -> {
-//					LOGGER.info(hasTurn ? "It is my turn" : "It is not my turn");
-//					loadingDialog.close();
-//					//TODO Switch to a game screen with turn player info and partner connection
-//				}).exceptionally(ex -> {
-//					String msg = "Failed to determine who starts";
-//					LOGGER.log(Level.WARNING, msg, ex);
-//					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-//					return null;
-//				});
-//			}).exceptionally(ex -> {
-//				String msg = "Failed to find a partner";
-//				LOGGER.log(Level.WARNING, msg, ex);
-//				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-//				//TODO Might want to clean up some stuff with the UI
-//				return null;
-//			});
+			}).thenRun(() -> Platform.runLater(loadingDialog::close));
 
 			// Display dialog while waiting for a partner
 			loadingDialog.initOwner(((Node)event.getTarget()).getScene().getWindow());
@@ -118,10 +100,12 @@ public class BattleshipClient extends Application {
 			loadingDialog.getDialogPane().setContent(progress);
 			loadingDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL);
 			loadingDialog.showAndWait();
+			LOGGER.finer("After loadingDialog.showAndWait()");
 		} catch (IOException e) {
 			String msg = "Failed to establish a connection to server";
 			LOGGER.log(Level.WARNING, msg, e);
 			new Alert(Alert.AlertType.WARNING, msg).showAndWait();
+			loadingDialog.close();
 		}
 	}
 }

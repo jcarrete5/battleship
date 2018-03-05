@@ -1,8 +1,10 @@
 package me.jcarrete.battleship.client.net;
 
 import me.jcarrete.battleship.client.BattleshipClient;
+import me.jcarrete.battleship.common.net.Message;
 
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -28,6 +30,7 @@ public class ServerConnection extends Socket {
 	}
 
 	private final DataInputStream in;
+	private final DataOutputStream out;
 	private final ExecutorService executor;
 
 	private ServerConnection(InetAddress serverAddress, int serverPort) throws IOException {
@@ -45,62 +48,67 @@ public class ServerConnection extends Socket {
 		setPerformancePreferences(1, 0, 0);
 		setSoTimeout(0);
 		in = new DataInputStream(getInputStream());
+		out = new DataOutputStream(getOutputStream());
 
 		executor = Executors.newSingleThreadExecutor();
 	}
 
-	/**
-	 * Receives a message from the server with the socket used to communicate
-	 * with the matched partner.
-	 * @return A {@link CompletableFuture} with a {@link PartnerConnection} if
-	 * we successfully found a partner.
-	 */
-	public CompletableFuture<PartnerConnection> findPartner() {
+	public CompletableFuture<PartnerConnection> findPartner(boolean isHost) {
 		final CompletableFuture<PartnerConnection> future = new CompletableFuture<>();
 
-		new Thread(() -> {
-			try {
-				byte[] rawIp = new byte[in.readInt()];
-				int totalBytesRead = 0;
-				do {
-					int bytesRead = in.read(rawIp, totalBytesRead, rawIp.length);
-					if (bytesRead == -1) throw new IOException("End of stream reached before entire ip was read");
-					totalBytesRead += bytesRead;
-				} while (totalBytesRead < rawIp.length);
+		executor.execute(() -> {
+			if (isHost) {
+				try (ServerSocket server = new ServerSocket(getLocalPort())) {
+					out.writeUTF(Message.HOST_READY.name());
+					future.complete(new PartnerConnection(server.accept()));
+				} catch (IOException ex) {
+					future.completeExceptionally(ex);
+				}
+			} else {
+				try {
+					byte[] rawIp = new byte[in.readInt()];
+					int totalBytesRead = 0;
+					do {
+						int bytesRead = in.read(rawIp, totalBytesRead, rawIp.length);
+						if (bytesRead == -1) throw new IOException("End of stream reached before entire ip was read");
+						totalBytesRead += bytesRead;
+					} while (totalBytesRead < rawIp.length);
 
-				InetAddress targetAddress = InetAddress.getByAddress(rawIp);
-				int targetPort = in.readInt();
-				future.complete(new PartnerConnection(targetAddress, targetPort));
-			} catch (IOException ex) {
-				future.completeExceptionally(ex);
+					InetAddress targetAddress = InetAddress.getByAddress(rawIp);
+					int targetPort = in.readInt();
+
+					future.complete(new PartnerConnection(new Socket(targetAddress, targetPort)));
+				} catch (IOException ex) {
+					future.completeExceptionally(ex);
+				}
 			}
-		}, "PartnerConnection Search Thread").start();
+		});
 
 		return future;
 	}
 
 	/**
-	 * Receives a message from the server with information regarding which player will go first.
+	 * Receives a message from the server with information regarding which player is host.
 	 * @return A {@link CompletableFuture} with the result of the server deciding which
 	 * player will start the game. (and also determines who is the host)
 	 */
-	public CompletableFuture<Boolean> getHasTurn() {
+	public CompletableFuture<Boolean> isHost() {
 		final CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-		new Thread(() -> {
+		executor.execute(() -> {
 			try {
 				future.complete(in.readBoolean());
 			} catch (IOException ex) {
 				future.completeExceptionally(ex);
 			}
-		}, "Get hasTurn Thread").start();
+		});
 
 		return future;
 	}
 
 	@Override
 	public synchronized void close() throws IOException {
-		super.close();
 		executor.shutdown();
+		super.close();
 	}
 }

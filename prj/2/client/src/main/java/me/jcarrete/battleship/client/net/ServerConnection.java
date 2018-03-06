@@ -1,6 +1,5 @@
 package me.jcarrete.battleship.client.net;
 
-import me.jcarrete.battleship.client.BattleshipClient;
 import me.jcarrete.battleship.common.net.Message;
 
 import java.io.DataInputStream;
@@ -9,10 +8,13 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
+
+import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
 /**
  * Represents a connection to a game server.
@@ -41,7 +43,7 @@ public class ServerConnection extends Socket {
 					this.close();
 				}
 			} catch (IOException ex) {
-				BattleshipClient.LOGGER.log(Level.WARNING, "Failed to close a ServerConnection for " + this, ex);
+				LOGGER.log(Level.WARNING, "Failed to close a ServerConnection for " + this, ex);
 			}
 		}));
 		setKeepAlive(true);
@@ -59,8 +61,14 @@ public class ServerConnection extends Socket {
 		executor.execute(() -> {
 			if (isHost) {
 				try (ServerSocket server = new ServerSocket(getLocalPort())) {
+					server.setSoTimeout(1000);
 					out.writeUTF(Message.HOST_READY.name());
-					future.complete(new PartnerConnection(server.accept()));
+					while (!Thread.interrupted()) {
+						try {
+							future.complete(new PartnerConnection(server.accept()));
+							break;
+						} catch (SocketTimeoutException ex) {}
+					}
 				} catch (IOException ex) {
 					future.completeExceptionally(ex);
 				}
@@ -108,7 +116,7 @@ public class ServerConnection extends Socket {
 
 	@Override
 	public synchronized void close() throws IOException {
-		executor.shutdown();
+		executor.shutdownNow();
 		super.close();
 	}
 }

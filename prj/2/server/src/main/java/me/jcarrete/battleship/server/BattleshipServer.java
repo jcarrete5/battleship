@@ -128,6 +128,7 @@ public class BattleshipServer {
 					LOGGER.fine(hostAsString + " is a host");
 					LOGGER.fine("Waiting for " + hostAsString + " to setup p2p server socket");
 
+					//FEATURE move this wait to another thread so the matchmaking thread can keep running
 					// Wait for host to be ready to receive connections
 					while (Message.valueOf(hostIn.readUTF()) != Message.HOST_READY) {
 						if (Thread.interrupted()) {

@@ -83,13 +83,16 @@ public class BattleshipClient extends Application {
 					LOGGER.log(Level.WARNING, msg, ex);
 					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
 					return null;
-				})
+				}).thenRun(() -> Platform.runLater(loadingDialog::close))
 			).exceptionally(ex -> {
 				String msg = "Failed to determine who starts";
 				LOGGER.log(Level.WARNING, msg, ex);
-				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+				Platform.runLater(() -> {
+					loadingDialog.close();
+					new Alert(Alert.AlertType.WARNING, msg).showAndWait();
+				});
 				return null;
-			}).thenRun(() -> Platform.runLater(loadingDialog::close));
+			});
 
 			// Display dialog while waiting for a partner
 			loadingDialog.initOwner(((Node)event.getTarget()).getScene().getWindow());
@@ -98,6 +101,7 @@ public class BattleshipClient extends Application {
 			ProgressIndicator progress = new ProgressIndicator();
 			loadingDialog.getDialogPane().setContent(progress);
 			loadingDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL);
+			//TODO clean up some net code if the search was canceled
 			loadingDialog.showAndWait();
 			LOGGER.finer("After loadingDialog.showAndWait()");
 		} catch (IOException e) {
@@ -106,5 +110,10 @@ public class BattleshipClient extends Application {
 			new Alert(Alert.AlertType.WARNING, msg).showAndWait();
 			loadingDialog.close();
 		}
+	}
+
+	@Override
+	public void stop() throws Exception {
+		LOGGER.fine("Stop called");
 	}
 }

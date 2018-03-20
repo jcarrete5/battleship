@@ -37,6 +37,7 @@ public class Course {
 				found = true;
 			}
 
+			// Move students ahead of deleted student back
 			if (found && i + 1 < students.length) {
 				students[i] = students[i + 1];
 			}
@@ -49,5 +50,6 @@ public class Course {
 
 	public void clear() {
 		students = new String[100];
+		numberOfStudents = 0;
 	}
 }

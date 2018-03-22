@@ -8,13 +8,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import me.jcarrete.battleship.client.net.ServerConnection;
+import me.jcarrete.battleship.client.scene.GameScene;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
@@ -59,13 +58,13 @@ public class BattleshipClient extends Application {
 	}
 
 	@Override
-	public void start(Stage primaryStage) throws Exception {
+	public void start(Stage stage) throws Exception {
 		Parent root = FXMLLoader.load(ClassLoader.getSystemResource("fxml/main_menu.fxml"));
 
-		primaryStage.setScene(new Scene(root, 400, 300));
-		primaryStage.setTitle(BuildVersion.getImplTitle() + " v" + BuildVersion.getImplVersion());
-		primaryStage.show();
-		primaryStage.centerOnScreen();
+		stage.setScene(new Scene(root, 400, 300));
+		stage.setTitle(BuildVersion.getImplTitle() + " v" + BuildVersion.getImplVersion());
+		stage.show();
+		stage.centerOnScreen();
 	}
 
 	@FXML
@@ -75,9 +74,10 @@ public class BattleshipClient extends Application {
 		try (ServerConnection conn = ServerConnection.connectToGameServer(InetAddress.getLocalHost(), 10000)) {
 			conn.isHost().thenAccept(isHost ->
 				conn.findPartner(isHost).thenAccept(partner -> {
-					//TODO Switch to a game screen with the partner connection
 					LOGGER.info("Found a partner with address " + partner.remoteAddressAndPortAsString());
 					LOGGER.info("Starting game");
+					final Stage stage = (Stage)((Button)event.getSource()).getScene().getWindow();
+					Platform.runLater(() -> stage.setScene(new GameScene(stage, isHost, partner)));
 				}).exceptionally(ex -> {
 					String msg = "Failed to find a partner";
 					LOGGER.log(Level.WARNING, msg, ex);

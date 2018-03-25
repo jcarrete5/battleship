@@ -1,5 +1,6 @@
 package me.jcarrete.battleship.client.scene;
 
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -35,12 +36,22 @@ public class GameScene extends Scene {
 
 	public static class GameSceneController {
 
-		@FXML
-		private Label turnIndicator;
+		@FXML private Label turnIndicator;
+		@FXML private BattleshipGrid grid;
 
 		@FXML
-		public void initialize() {
+		private void initialize() {
 			turnIndicator.setText("Waiting for opponent");
+
+			grid.draw();
+
+			//TODO setup some network event listeners to update screen when network events occur
+		}
+
+		@FXML
+		private void onRandomPress(ActionEvent event) {
+			LOGGER.fine("onRandomPress called");
+			event.consume();
 		}
 	}
 }

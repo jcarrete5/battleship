@@ -11,7 +11,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import me.jcarrete.battleship.client.net.ServerConnection;
 import me.jcarrete.battleship.client.scene.GameScene;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;

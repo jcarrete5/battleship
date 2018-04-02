@@ -56,34 +56,47 @@ public class GameScene extends Scene {
 			event.consume();
 			grid.clear();
 
-			// Inefficient but simple to understand
-			while (!grid.isValid()) {
-				grid.clear();
-				// Randomly place carrier
+			Ship ship = null;
+
+			// Randomly place carrier
+			do {
 				int rRow = (int)(Math.random() * (BattleshipGrid.ROWS / 2 - 4) + 10);
 				int rCol = (int)(Math.random() * (BattleshipGrid.COLS - 4));
-				grid.addShip(new Ship(carrierView.getImage(), rRow, rCol));
+				ship = new Ship(carrierView.getImage(), rRow, rCol);
+			} while (!grid.addShip(ship));
+			LOGGER.fine("Placed Carrier");
 
-				// Randomly place battleship
-				rRow = (int)(Math.random() * (BattleshipGrid.ROWS / 2 - 3) + 10);
-				rCol = (int)(Math.random() * (BattleshipGrid.COLS - 3));
-				grid.addShip(new Ship(battleshipView.getImage(), rRow, rCol));
+			// Randomly place battleship
+			do {
+				int rRow = (int)(Math.random() * (BattleshipGrid.ROWS / 2 - 3) + 10);
+				int rCol = (int)(Math.random() * (BattleshipGrid.COLS - 3));
+				ship = new Ship(battleshipView.getImage(), rRow, rCol);
+			} while (!grid.addShip(ship));
+			LOGGER.fine("Placed Battleship");
 
-				// Randomly place cruiser
-				rRow = (int)(Math.random() * (BattleshipGrid.ROWS / 2 - 2) + 10);
-				rCol = (int)(Math.random() * (BattleshipGrid.COLS - 2));
-				grid.addShip(new Ship(cruiserView.getImage(), rRow, rCol));
+			// Randomly place cruiser
+			do {
+				int rRow = (int) (Math.random() * (BattleshipGrid.ROWS / 2 - 2) + 10);
+				int rCol = (int) (Math.random() * (BattleshipGrid.COLS - 2));
+				ship = new Ship(cruiserView.getImage(), rRow, rCol);
+			} while (!grid.addShip(ship));
+			LOGGER.fine("Placed Cruiser");
 
-				// Randomly place battleship
-				rRow = (int)(Math.random() * (BattleshipGrid.ROWS / 2 - 2) + 10);
-				rCol = (int)(Math.random() * (BattleshipGrid.COLS - 2));
-				grid.addShip(new Ship(submarineView.getImage(), rRow, rCol));
+			// Randomly place submarine
+			do {
+				int rRow = (int) (Math.random() * (BattleshipGrid.ROWS / 2 - 2) + 10);
+				int rCol = (int) (Math.random() * (BattleshipGrid.COLS - 2));
+				ship = new Ship(submarineView.getImage(), rRow, rCol);
+			} while (!grid.addShip(ship));
+			LOGGER.fine("Placed Submarine");
 
-				// Randomly place battleship
-				rRow = (int)(Math.random() * (BattleshipGrid.ROWS / 2 - 1) + 10);
-				rCol = (int)(Math.random() * (BattleshipGrid.COLS - 1));
-				grid.addShip(new Ship(destroyerView.getImage(), rRow, rCol));
-			}
+			// Randomly place destroyer
+			do {
+				int rRow = (int) (Math.random() * (BattleshipGrid.ROWS / 2 - 1) + 10);
+				int rCol = (int) (Math.random() * (BattleshipGrid.COLS - 1));
+				ship = new Ship(destroyerView.getImage(), rRow, rCol);
+			} while (!grid.addShip(ship));
+			LOGGER.fine("Placed Destroyer");
 
 			grid.draw();
 		}

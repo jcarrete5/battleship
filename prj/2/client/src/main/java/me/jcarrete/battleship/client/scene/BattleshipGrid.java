@@ -5,9 +5,6 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-
-import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
 /**
  * Represents the top and bottom grid and records information
@@ -20,6 +17,7 @@ public class BattleshipGrid extends Canvas {
 
 	private ArrayList<Ship> ships;
 	private Ship[][] cells;
+	private int occupiedCells;
 
 	public BattleshipGrid() {
 		ships = new ArrayList<>(5);
@@ -56,19 +54,40 @@ public class BattleshipGrid extends Canvas {
 		g.restore();
 	}
 
-	public void addShip(Ship ship) {
-		ships.add(ship);
+	/**
+	 * Adds a ship to the grid.
+	 * @param ship
+	 * @return <tt>true</tt> if the ship was placed successfullly, otherwise <tt>false</tt>.
+	 */
+	public boolean addShip(Ship ship) {
+		Ship[][] oldCells = new Ship[ROWS][COLS];
+		for (int row = 10; row < ROWS; row++) {
+			System.arraycopy(cells[row], 0, oldCells[row], 0, COLS);
+		}
 
 		// Add ship to cell grid
 		if (ship.isHorizontal()) {
 			for (int col = 0; col < ship.length(); col++) {
+				if (cells[ship.row()][ship.col() + col] != null) {
+					cells = oldCells;
+					return false;
+				}
+
 				cells[ship.row()][ship.col() + col] = ship;
 			}
 		} else {
 			for (int row = 0; row < ship.length(); row++) {
+				if (cells[ship.row() + row][ship.col()] != null) {
+					cells = oldCells;
+					return false;
+				}
+
 				cells[ship.row() + row][ship.col()] = ship;
 			}
 		}
+
+		ships.add(ship);
+		return true;
 	}
 
 	public void clear() {

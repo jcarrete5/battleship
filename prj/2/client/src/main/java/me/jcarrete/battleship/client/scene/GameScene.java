@@ -56,7 +56,7 @@ public class GameScene extends Scene {
 			event.consume();
 			grid.clear();
 
-			Ship ship = null;
+			Ship ship;
 
 			// Randomly place carrier
 			do {

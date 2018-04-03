@@ -17,7 +17,6 @@ public class BattleshipGrid extends Canvas {
 
 	private ArrayList<Ship> ships;
 	private Ship[][] cells;
-	private int occupiedCells;
 
 	public BattleshipGrid() {
 		ships = new ArrayList<>(5);
@@ -93,21 +92,5 @@ public class BattleshipGrid extends Canvas {
 	public void clear() {
 		ships.clear();
 		cells = new Ship[ROWS][COLS];
-	}
-
-	/**
-	 * Validates the grid based on where the ships are placed.
-	 * @return <tt>true</tt> if the grid is valid, otherwise <tt>false</tt>.
-	 */
-	public boolean isValid() {
-		int count = 0;
-		for (Ship[] row : cells) {
-			for (Ship s : row) {
-				if (s != null) {
-					count++;
-				}
-			}
-		}
-		return count == 17;  // Should be exactly 17 cells with Ships
 	}
 }

@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
@@ -13,6 +14,7 @@ import javafx.stage.Stage;
 import me.jcarrete.battleship.client.net.PartnerConnection;
 
 import java.io.IOException;
+import java.util.logging.Level;
 
 import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
@@ -61,12 +63,14 @@ public class GameScene extends Scene {
 			grid.draw();
 
 			//TODO setup some network event listeners to update screen when network events occur
+
 		}
 
 		@FXML
 		private void onRandomPress(ActionEvent event) {
 			LOGGER.fine("onRandomPress called");
 			event.consume();
+			grid.clear();
 
 			Ship ship;
 
@@ -111,7 +115,14 @@ public class GameScene extends Scene {
 			LOGGER.fine("Placed Destroyer");
 
 			// Tell foe that I am ready to start
-			partner.ready();
+			try {
+				partner.ready();
+			} catch (IOException e) {
+				final String msg = "Failed to send ready message";
+				LOGGER.log(Level.WARNING, msg, e);
+				new Alert(Alert.AlertType.WARNING, msg).showAndWait();
+				return;
+			}
 
 			// Remove side panel with ships
 			gameSceneLayout.setLeft(null);

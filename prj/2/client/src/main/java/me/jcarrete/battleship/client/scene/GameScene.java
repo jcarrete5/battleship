@@ -5,8 +5,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import me.jcarrete.battleship.client.net.PartnerConnection;
 
@@ -16,11 +18,13 @@ import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
 public class GameScene extends Scene {
 
+	private static FXMLLoader fxmlLoader;
 	private static Parent gameSceneRoot;
 
 	static {
 		try {
-			gameSceneRoot = FXMLLoader.load(ClassLoader.getSystemResource("fxml/game_scene.fxml"));
+			fxmlLoader = new FXMLLoader(ClassLoader.getSystemResource("fxml/game_scene.fxml"));
+			gameSceneRoot = fxmlLoader.load();
 		} catch (IOException e) {
 			LOGGER.severe("Unable to load fxml/game_scene.fxml");
 			throw new RuntimeException(e);
@@ -32,11 +36,20 @@ public class GameScene extends Scene {
 	public GameScene(Stage stage, boolean isHost, PartnerConnection partner) {
 		super(gameSceneRoot);
 		this.stage = stage;
+
+		GameSceneController controller = fxmlLoader.getController();
+		controller.setHasTurn(isHost);
+		controller.setPartner(partner);
+
 		stage.centerOnScreen();
 	}
 
 	public static class GameSceneController {
 
+		private PartnerConnection partner;
+		private boolean hasTurn;
+
+		@FXML private BorderPane gameSceneLayout;
 		@FXML private Label turnIndicator;
 		@FXML private BattleshipGrid grid;
 		@FXML private ImageView carrierView, battleshipView, cruiserView, submarineView, destroyerView;
@@ -54,7 +67,6 @@ public class GameScene extends Scene {
 		private void onRandomPress(ActionEvent event) {
 			LOGGER.fine("onRandomPress called");
 			event.consume();
-			grid.clear();
 
 			Ship ship;
 
@@ -98,7 +110,21 @@ public class GameScene extends Scene {
 			} while (!grid.addShip(ship));
 			LOGGER.fine("Placed Destroyer");
 
+			// Tell foe that I am ready to start
+			partner.ready();
+
+			// Remove side panel with ships
+			gameSceneLayout.setLeft(null);
+
 			grid.draw();
+		}
+
+		private void setPartner(PartnerConnection partner) {
+			this.partner = partner;
+		}
+
+		private void setHasTurn(boolean hasTurn) {
+			this.hasTurn = hasTurn;
 		}
 	}
 }

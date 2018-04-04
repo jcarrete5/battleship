@@ -11,6 +11,7 @@ import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import me.jcarrete.battleship.client.net.NetMessage;
 import me.jcarrete.battleship.client.net.PartnerConnection;
 
 import java.io.IOException;
@@ -114,9 +115,13 @@ public class GameScene extends Scene {
 			} while (!grid.addShip(ship));
 			LOGGER.fine("Placed Destroyer");
 
-			// Tell foe that I am ready to start
 			try {
+				// Tell foe that I am ready to start
 				partner.ready();
+				// When my partner is ready, start playing
+				partner.receive(NetMessage.MSG_READY).thenAccept(msg -> {
+
+				});
 			} catch (IOException e) {
 				final String msg = "Failed to send ready message";
 				LOGGER.log(Level.WARNING, msg, e);

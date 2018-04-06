@@ -67,6 +67,11 @@ public class BattleshipClient extends Application {
 	}
 
 	@FXML
+	private void onSinglePress(ActionEvent event) {
+		new Alert(Alert.AlertType.INFORMATION, "Not implemented").showAndWait();
+	}
+
+	@FXML
 	private void onMultiPress(ActionEvent event) {
 		event.consume();
 		Dialog<Void> loadingDialog = new Dialog<>();

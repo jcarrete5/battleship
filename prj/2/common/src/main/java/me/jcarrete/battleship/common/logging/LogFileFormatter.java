@@ -31,7 +31,7 @@ public class LogFileFormatter extends Formatter {
 				.append(record.getSourceMethodName())
 				.append(']').append(':').append(' ')
 				.append(formatMessage(record))
-				.append('\n')
+				.append(System.lineSeparator())
 				.append(throwableToString(record.getThrown()));
 		return formatted.toString();
 	}

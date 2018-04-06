@@ -2,7 +2,9 @@ package me.jcarrete.battleship.server;
 
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
+import me.jcarrete.battleship.common.net.Message;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -85,8 +87,10 @@ public class BattleshipServer {
 			while (!Thread.interrupted()) {
 				Socket s1, s2;
 
+				// Wait for two connections
 				try {
 					s1 = connections.take();
+					LOGGER.fine(socketAsString(s1) + " was taken from the connections queue");
 				} catch (InterruptedException ex) {
 					LOGGER.log(Level.WARNING, "Interrupted while waiting for first player", ex);
 					Thread.currentThread().interrupt();
@@ -95,44 +99,65 @@ public class BattleshipServer {
 
 				try {
 					s2 = connections.take();
+					LOGGER.fine(socketAsString(s2) + " was taken from the connections queue");
 				} catch (InterruptedException ex) {
-					connections.add(s1); // Add first player back into queue
 					LOGGER.log(Level.WARNING, "Interrupted while waiting for a second player", ex);
 					Thread.currentThread().interrupt();
 					throw new RuntimeException(ex);
 				}
 
-				boolean hasTurn = Math.random() < 0.5;
+				// Pick one to be the host
+				Socket host, other;
+				if (Math.random() < 0.5) {
+					host = s1;
+					other = s2;
+				} else {
+					host = s2;
+					other = s1;
+				}
 
-				try (DataOutputStream s1out = new DataOutputStream(s1.getOutputStream())) {
-					byte[] rawIp = s2.getInetAddress().getAddress();
-					s1out.writeInt(rawIp.length);
-					s1out.write(rawIp);
-					s1out.writeInt(s2.getPort());
-					s1out.writeBoolean(hasTurn);
+				// Send data to each player to determine who to connect to
+				try (DataOutputStream hostOut = new DataOutputStream(host.getOutputStream());
+				     DataInputStream hostIn = new DataInputStream(host.getInputStream());
+				     DataOutputStream otherOut = new DataOutputStream(other.getOutputStream())) {
+
+					hostOut.writeBoolean(true);
+					otherOut.writeBoolean(false);
+
+					String hostAsString = socketAsString(host);
+					LOGGER.fine(hostAsString + " is a host");
+					LOGGER.fine("Waiting for " + hostAsString + " to setup p2p server socket");
+
+					//FEATURE move this wait to another thread so the matchmaking thread can keep running
+					// Wait for host to be ready to receive connections
+					while (Message.valueOf(hostIn.readUTF()) != Message.HOST_READY) {
+						if (Thread.interrupted()) {
+							LOGGER.warning("Interrupted while waiting for " + Message.HOST_READY.name());
+							Thread.currentThread().interrupt();
+							throw new RuntimeException("Thread interrupted in the middle of IO");
+						}
+					}
+
+					LOGGER.fine(hostAsString + " is ready to receive connections");
+
+					// Tell other player where to connect to
+					byte[] rawIp = host.getInetAddress().getAddress();
+					otherOut.writeInt(rawIp.length);
+					otherOut.write(rawIp);
+					otherOut.writeInt(host.getPort());
 				} catch (IOException ex) {
-					connections.add(s2); // Add second player back into queue
-					LOGGER.log(Level.WARNING, "Failed to send all necessary data to first player", ex);
+					LOGGER.log(Level.WARNING, "Failed to match " + socketAsString(s1) + " and " + socketAsString(s2),
+							ex);
 					continue;
 				}
 
-				try (DataOutputStream s2out = new DataOutputStream(s2.getOutputStream())) {
-					byte[] rawIp = s1.getInetAddress().getAddress();
-					s2out.writeInt(rawIp.length);
-					s2out.write(rawIp);
-					s2out.writeInt(s1.getPort());
-					s2out.writeBoolean(!hasTurn);
-				} catch (IOException ex) {
-					connections.add(s1); // Add first player back into queue
-					LOGGER.log(Level.WARNING, "Failed to send all necessary data to second player", ex);
-					continue;
-				}
-
-				LOGGER.info("Connection made between "
-						+ s1.getInetAddress() + ":" + s1.getPort() + " and "
-						+ s2.getInetAddress() + ":" + s2.getPort());
+				LOGGER.info("Connection made between " + socketAsString(s1) + " and " + socketAsString(s2));
 			}
 		};
+	}
+
+	private static String socketAsString(Socket s) {
+		return s.getInetAddress() + ":" + s.getPort();
 	}
 
 	private static void setupLogger() {

@@ -8,9 +8,8 @@
           alignment="center" hgap="10" vgap="10">
     <padding><Insets top="25" right="25" bottom="10" left="25"/></padding>
 
-    <Button fx:id="btnSingle" text="Singleplayer" GridPane.rowIndex="0" GridPane.halignment="CENTER"/>
+    <Button onAction="#onSinglePress" text="Singleplayer" GridPane.rowIndex="0" GridPane.halignment="CENTER"/>
 
-    <Button fx:id="btnMulti" onAction="#onMultiPress" text="Multiplayer" GridPane.rowIndex="1"
-            GridPane.halignment="CENTER"/>
+    <Button onAction="#onMultiPress" text="Multiplayer" GridPane.rowIndex="1" GridPane.halignment="CENTER"/>
 
 </GridPane>

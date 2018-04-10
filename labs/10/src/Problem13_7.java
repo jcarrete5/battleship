@@ -2,7 +2,7 @@ public class Problem13_7 {
 
 	public static void main(String[] args) {
 		GeometricObject[] objs = {
-			new Square(4), new Circle(), new Octogon(3), new Octogon(), new Square()
+			new Square(4), new Circle(), new Octagon(3), new Octagon(), new Square()
 		};
 
 		for (GeometricObject obj : objs) {

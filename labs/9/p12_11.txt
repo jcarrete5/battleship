@@ -1,3 +1,0 @@
-the quick brown
-the hello
-I am the writer of the file

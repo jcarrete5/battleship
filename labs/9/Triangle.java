@@ -1,3 +1,4 @@
+// JA: No test class?
 public class Triangle extends GeometricObject {
 
 	private double s1, s2, s3;

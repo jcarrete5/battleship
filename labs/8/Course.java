@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 import java.util.Iterator;
-
+// JA: No test class?
 public class Course {
 
 	private String courseName;

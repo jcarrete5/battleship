@@ -11,7 +11,8 @@
 <?import me.jcarrete.battleship.client.scene.BattleshipGrid?>
 
 <BorderPane fx:id="gameSceneLayout" prefHeight="600.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/8.0.121"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.jcarrete.battleship.client.scene.GameScene$GameSceneController">
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="me.jcarrete.battleship.client.scene.controller.GameSceneController">
    <center>
       <BattleshipGrid fx:id="grid" height="500.0" width="250.0" />
    </center>

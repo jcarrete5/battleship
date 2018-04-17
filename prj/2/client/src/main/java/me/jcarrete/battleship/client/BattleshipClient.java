@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 import me.jcarrete.battleship.client.net.PartnerConnection;
 import me.jcarrete.battleship.client.net.ServerConnection;
 import me.jcarrete.battleship.client.scene.GameScene;
+import me.jcarrete.battleship.client.scene.MainMenuScene;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
@@ -32,6 +33,21 @@ public class BattleshipClient extends Application {
 	public static final Logger LOGGER = Logger.getLogger(BattleshipClient.class.getPackage().getName());
 
 	private static PartnerConnection partner;
+
+//	public static void onPartnerQuit() {
+//		final String msg = "Partner left the game";
+//		LOGGER.info(msg);
+//		Platform.runLater(() -> new Alert(Alert.AlertType.INFORMATION, msg).showAndWait());
+//		try {
+//			partner.close();
+//		} catch (IOException e) {
+//			LOGGER.log(Level.WARNING, "Failed to close partner socket", e);
+//		}
+//	}
+
+	public static void setPartner(PartnerConnection partner) {
+		BattleshipClient.partner = partner;
+	}
 
 	@Override
 	public void init() throws Exception {
@@ -62,66 +78,10 @@ public class BattleshipClient extends Application {
 
 	@Override
 	public void start(Stage stage) throws Exception {
-		Parent root = FXMLLoader.load(ClassLoader.getSystemResource("fxml/main_menu.fxml"));
-
-		stage.setScene(new Scene(root, 400, 300));
+		stage.setScene(new MainMenuScene(stage));
 		stage.setTitle(BuildVersion.getImplTitle() + " v" + BuildVersion.getImplVersion());
 		stage.show();
 		stage.centerOnScreen();
-	}
-
-	@FXML
-	private void onSinglePress(ActionEvent event) {
-		Alert alert = new Alert(Alert.AlertType.INFORMATION, "Not implemented");
-		alert.setTitle("Singleplayer");
-		alert.setHeaderText("Unable to load singleplayer");
-		alert.showAndWait();
-	}
-
-	@FXML
-	private void onMultiPress(ActionEvent event) {
-		Dialog<Void> loadingDialog = new Dialog<>();
-		try (ServerConnection conn = ServerConnection.connectToGameServer(InetAddress.getLocalHost(), 10000)) {
-			conn.isHost().thenAccept(isHost ->
-				conn.findPartner(isHost).thenAccept(partner -> {
-					LOGGER.info("Found a partner with address " + partner.remoteAddressAndPortAsString());
-					LOGGER.info("Starting game setup");
-					final Stage stage = (Stage)((Button)event.getSource()).getScene().getWindow();
-					BattleshipClient.partner = partner;
-					LOGGER.info(Thread.currentThread().getName());
-					Platform.runLater(() -> stage.setScene(new GameScene(stage, isHost, partner)));
-				}).exceptionally(ex -> {
-					String msg = "Failed to find a partner";
-					LOGGER.log(Level.WARNING, msg, ex);
-					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-					return null;
-				}).thenRun(() -> Platform.runLater(loadingDialog::close))
-			).exceptionally(ex -> {
-				String msg = "Failed to determine who starts";
-				LOGGER.log(Level.WARNING, msg, ex);
-				Platform.runLater(() -> {
-					loadingDialog.close();
-					new Alert(Alert.AlertType.WARNING, msg).showAndWait();
-				});
-				return null;
-			});
-
-			// Display dialog while waiting for a partner
-			loadingDialog.initOwner(((Node)event.getTarget()).getScene().getWindow());
-			loadingDialog.initModality(Modality.WINDOW_MODAL);
-			loadingDialog.setContentText("Waiting for a player...");
-			ProgressIndicator progress = new ProgressIndicator();
-			loadingDialog.getDialogPane().setContent(progress);
-			loadingDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL);
-			//TODO clean up some net code if the search was canceled
-			loadingDialog.showAndWait();
-			LOGGER.finer("After loadingDialog.showAndWait()");
-		} catch (IOException e) {
-			String msg = "Failed to establish a connection to server";
-			LOGGER.log(Level.WARNING, msg, e);
-			new Alert(Alert.AlertType.WARNING, msg).showAndWait();
-			loadingDialog.close();
-		}
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package me.jcarrete.battleship.client.scene;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -11,7 +12,6 @@ import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
-import me.jcarrete.battleship.client.net.NetMessage;
 import me.jcarrete.battleship.client.net.PartnerConnection;
 
 import java.io.IOException;
@@ -41,8 +41,7 @@ public class GameScene extends Scene {
 		this.stage = stage;
 
 		GameSceneController controller = fxmlLoader.getController();
-		controller.setHasTurn(isHost);
-		controller.setPartner(partner);
+		controller.setup(partner, isHost);
 
 		stage.centerOnScreen();
 	}
@@ -53,6 +52,7 @@ public class GameScene extends Scene {
 		private boolean hasTurn;
 
 		@FXML private BorderPane gameSceneLayout;
+		@FXML private Button randomButton;
 		@FXML private Label turnIndicator;
 		@FXML private BattleshipGrid grid;
 		@FXML private ImageView carrierView, battleshipView, cruiserView, submarineView, destroyerView;
@@ -62,14 +62,21 @@ public class GameScene extends Scene {
 			turnIndicator.setText("Waiting for opponent");
 
 			grid.draw();
+		}
 
-			//TODO setup some network event listeners to update screen when network events occur
-
+		/**
+		 * Called after initialize.
+		 * @param partner partner
+		 * @param hasTurn <tt>true</tt> if I start the game, otherwise <tt>false</tt>.
+		 */
+		private void setup(PartnerConnection partner, boolean hasTurn) {
+			this.partner = partner;
+			this.hasTurn = hasTurn;
 		}
 
 		@FXML
 		private void onRandomPress(ActionEvent event) {
-			LOGGER.fine("onRandomPress called");
+			LOGGER.finest("onRandomPress called");
 			event.consume();
 			grid.clear();
 
@@ -115,32 +122,30 @@ public class GameScene extends Scene {
 			} while (!grid.addShip(ship));
 			LOGGER.fine("Placed Destroyer");
 
-			try {
-				// Tell foe that I am ready to start
-				partner.ready();
-				// When my partner is ready, start playing
-				partner.receive(NetMessage.MSG_READY).thenAccept(msg -> {
 
+			try {
+				// Tell partner that I am ready to start
+				partner.ready().thenAccept(msg -> {
+					LOGGER.finer("I should start the game");
+				}).thenRun(() -> Platform.runLater(() -> {
+					// Remove side panel with ships
+					gameSceneLayout.setLeft(null);
+
+					grid.draw();
+				})).exceptionally(e -> {
+					final String msg = "Exception when waiting for partner's response to ready message";
+					LOGGER.log(Level.WARNING, msg, e);
+					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+					randomButton.setDisable(false);
+					return null;
 				});
+
+				randomButton.setDisable(true);
 			} catch (IOException e) {
 				final String msg = "Failed to send ready message";
 				LOGGER.log(Level.WARNING, msg, e);
 				new Alert(Alert.AlertType.WARNING, msg).showAndWait();
-				return;
 			}
-
-			// Remove side panel with ships
-			gameSceneLayout.setLeft(null);
-
-			grid.draw();
-		}
-
-		private void setPartner(PartnerConnection partner) {
-			this.partner = partner;
-		}
-
-		private void setHasTurn(boolean hasTurn) {
-			this.hasTurn = hasTurn;
 		}
 	}
 }

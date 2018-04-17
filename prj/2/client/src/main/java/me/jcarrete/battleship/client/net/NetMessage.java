@@ -16,6 +16,21 @@ public class NetMessage {
 	 */
 	public static final int MSG_READY = 1;
 
+	/**
+	 *
+	 */
+	public static final int MSG_FIRE = 2;
+
+	/**
+	 *
+	 */
+	public static final int MSG_QUIT = 3;
+
+	/**
+	 *
+	 */
+	public static final int MSG_FIRE_RESULT = 4;
+
 	private final int msgType;
 	private final int bodyLength;
 	private final ByteBuffer body;
@@ -36,5 +51,10 @@ public class NetMessage {
 
 	public ByteBuffer getBody() {
 		return body.asReadOnlyBuffer();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("NetMessage: {type: %d, length: %d}", msgType, bodyLength);
 	}
 }

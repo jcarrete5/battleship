@@ -5,11 +5,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-import java.util.logging.Level;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
@@ -21,43 +20,13 @@ public class PartnerConnection implements AutoCloseable {
 	private Socket socket;
 	private DataInputStream in;
 	private DataOutputStream out;
-	private Thread messageDispatchThread;
-	private HashMap<Integer, LinkedList<Consumer<NetMessage>>> hooks;
+	private ExecutorService executor;
 
 	PartnerConnection(Socket s) throws IOException {
 		socket = s;
 		in = new DataInputStream(s.getInputStream());
 		out = new DataOutputStream(s.getOutputStream());
-		hooks = new HashMap<>();
-
-		messageDispatchThread = new Thread(() -> {
-			while (!Thread.interrupted()) {
-				try {
-					final int msgType = in.readInt();
-					final int bodyLength = in.readInt();
-					final byte[] body = new byte[bodyLength];
-
-					int bytesRead = 0;
-					while (bytesRead < bodyLength) {
-						bytesRead += in.read(body, bytesRead, bodyLength - bytesRead);
-					}
-
-					NetMessage msg = new NetMessage(msgType, bodyLength, body);
-
-					// Give the NetMessage to every hook listening to that message
-					hooks.forEach((type, callbacks) -> {
-						if (type != msgType) return;
-
-					});
-				} catch (SocketException e) {
-					// Called when socket is closed in the middle of a read
-					LOGGER.log(Level.INFO, "Socket is closed while reading data", e);
-					Thread.currentThread().interrupt();
-				} catch (IOException e) {
-					LOGGER.log(Level.WARNING, "Failed to receive a net message", e);
-				}
-			}
-		}, "Message Dispatch Thread");
+		executor = Executors.newSingleThreadExecutor();
 	}
 
 	public String remoteAddressAndPortAsString() {
@@ -65,31 +34,86 @@ public class PartnerConnection implements AutoCloseable {
 	}
 
 	/**
-	 * Attaches a listener to wait for a message from the partner.
-	 * @param type the type of message to listen for.
-	 * @return a {@link CompletableFuture} with the {@link NetMessage} response
-	 * from the partner.
+	 * Blocking function that waits for a message from the partner. Be careful using this
+	 * as it will prevent the message from propagating to any thread that could be waiting
+	 * for a {@link NetMessage}.
+	 * @return The {@link NetMessage} received from the partner.
+	 * @throws SocketException when the input stream is closed during a read
+	 * @throws IOException the input stream has been closed and the contained input
+	 * stream does not support reading after close, or another I/O error occurs.
 	 */
-	public CompletableFuture<NetMessage> receive(int type) {
-		final CompletableFuture<NetMessage> future = new CompletableFuture<>();
-		LinkedList<Consumer<NetMessage>> callbacks = hooks.getOrDefault(type, new LinkedList<>());
-		callbacks.add(future::complete);
-		hooks.putIfAbsent(type, callbacks);
-		return future;
+	private NetMessage receive() throws IOException {
+		LOGGER.fine("Waiting for a message from the partner...");
+
+		// Read a message from partner
+		final int msgType = in.readInt();
+		final int bodyLength = in.readInt();
+		final byte[] body = new byte[bodyLength];
+
+		int bytesRead = 0;
+		while (bytesRead < bodyLength) {
+			bytesRead += in.read(body, bytesRead, bodyLength - bytesRead);
+		}
+
+		LOGGER.fine("Received a message from the partner");
+		return new NetMessage(msgType, bodyLength, body);
+	}
+
+	/**
+	 * Returns a {@link CompletableFuture} with a {@link NetMessage} result. Be careful using this
+	 * as it will prevent the message from propagating to any thread that could be waiting
+	 * for a {@link NetMessage}.
+	 * @return A {@link CompletableFuture} with the {@link NetMessage}
+	 * received from the partner.
+	 */
+	private CompletableFuture<NetMessage> getFutureMessage() {
+//		CompletableFuture<NetMessage> future = new CompletableFuture<>();
+//		executor.execute(() -> {
+//			try {
+//				future.complete(receive());
+//			} catch (IOException e) {
+//				future.completeExceptionally(e);
+//			}
+//		});
+//		return future;
+		return CompletableFuture.supplyAsync(() -> {
+			try {
+				return receive();
+			} catch (IOException e) {
+				throw new CompletionException(e);
+			}
+		}, executor);
 	}
 
 	/**
 	 * Tell foe that we are ready to play.
+	 * @return A {@link CompletableFuture<NetMessage>} with the response from the
+	 * partner after sending a ready message.
 	 */
-	public void ready() throws IOException {
-		LOGGER.fine("Sending ready message");
+	public CompletableFuture<NetMessage> ready() throws IOException {
+		LOGGER.fine("Sending ready message to partner...");
 		out.writeInt(NetMessage.MSG_READY);
 		out.writeInt(0);
+		LOGGER.fine("Sent ready message to partner");
+
+		return getFutureMessage();
 	}
 
 	@Override
 	public void close() throws IOException {
+		LOGGER.info("Closing partner...");
+		executor.shutdownNow();
 		socket.close();
-		messageDispatchThread.interrupt();
+		LOGGER.info("Partner closed");
 	}
+
+//	@Override
+//	protected void finalize() throws Throwable {
+//		LOGGER.finer("PartnerConnection has been gc'd");
+//		if (!socket.isClosed()) {
+//			LOGGER.warning("Socket was never closed. Closing now");
+//			socket.close();
+//		}
+//		super.finalize();
+//	}
 }

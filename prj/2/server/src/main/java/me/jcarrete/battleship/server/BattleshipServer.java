@@ -30,6 +30,7 @@ public class BattleshipServer {
 			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				try {
 					if (!serverSocket.isClosed()) {
+						LOGGER.info("Closing server socket");
 						serverSocket.close();
 					}
 				} catch (IOException ex) {
@@ -45,6 +46,7 @@ public class BattleshipServer {
 				for (Socket s : connections) {
 					try {
 						if (!s.isClosed()) {
+							LOGGER.info("Closing socket: " + s);
 							s.close();
 						}
 					} catch (IOException ex) {

@@ -56,7 +56,8 @@
                   <Image url="@../img/destroyer.png" />
                </image>
             </ImageView>
-            <Button mnemonicParsing="false" onAction="#onRandomPress" prefHeight="40.0" prefWidth="80.0" text="Random">
+            <Button fx:id="randomButton" mnemonicParsing="false" onAction="#onRandomPress" prefHeight="40.0"
+                    prefWidth="80.0" text="Random">
                <font>
                   <Font size="12.0" />
                </font>

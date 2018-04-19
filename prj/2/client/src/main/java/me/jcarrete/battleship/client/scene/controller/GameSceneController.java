@@ -3,6 +3,7 @@ package me.jcarrete.battleship.client.scene.controller;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -31,10 +32,11 @@ public class GameSceneController {
 	@FXML private BattleshipGrid grid;
 	@FXML private ImageView carrierView, battleshipView, cruiserView, submarineView, destroyerView;
 
+	private Node leftNode;
+
 	@FXML
 	private void initialize() {
-		turnIndicator.setText("Waiting for opponent");
-		grid.draw();
+		leftNode = gameSceneLayout.getLeft();
 	}
 
 	/**
@@ -61,6 +63,12 @@ public class GameSceneController {
 				LOGGER.log(Level.WARNING, "Failed to close partner socket", e);
 			}
 		});
+
+		turnIndicator.setText("Waiting for opponent");
+		gameSceneLayout.setLeft(leftNode);
+		randomButton.setDisable(false);
+		grid.clear();
+		grid.draw();
 	}
 
 	@FXML

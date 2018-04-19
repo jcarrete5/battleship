@@ -8,6 +8,7 @@ import me.jcarrete.battleship.client.net.PartnerConnection;
 import me.jcarrete.battleship.client.scene.controller.GameSceneController;
 
 import java.io.IOException;
+import java.util.logging.Level;
 
 import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 

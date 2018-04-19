@@ -8,6 +8,9 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+import javafx.stage.Stage;
+import me.jcarrete.battleship.client.BattleshipClient;
+import me.jcarrete.battleship.client.net.NetMessage;
 import me.jcarrete.battleship.client.net.PartnerConnection;
 import me.jcarrete.battleship.client.scene.BattleshipGrid;
 import me.jcarrete.battleship.client.scene.Ship;
@@ -35,13 +38,29 @@ public class GameSceneController {
 	}
 
 	/**
-	 * Called after initialize.
+	 * Call after initialize. Can be called multiple times
+	 * @param stage stage
 	 * @param partner partner
 	 * @param hasTurn <tt>true</tt> if I start the game, otherwise <tt>false</tt>.
 	 */
-	public void setup(PartnerConnection partner, boolean hasTurn) {
+	public void setup(Stage stage, PartnerConnection partner, boolean hasTurn) {
 		this.partner = partner;
 		this.hasTurn = hasTurn;
+
+		// Handle partner quitting game
+		partner.getFutureMessage(NetMessage.MSG_QUIT).thenAccept(msg -> {
+			final String errMsg = "Partner left the game";
+			LOGGER.info(errMsg);
+			Platform.runLater(() -> {
+				BattleshipClient.switchToMainMenuScene(stage);
+				new Alert(Alert.AlertType.INFORMATION, errMsg).showAndWait();
+			});
+			try {
+				partner.close();
+			} catch (IOException e) {
+				LOGGER.log(Level.WARNING, "Failed to close partner socket", e);
+			}
+		});
 	}
 
 	@FXML
@@ -95,17 +114,23 @@ public class GameSceneController {
 
 		try {
 			// Tell partner that I am ready to start
-			partner.ready().thenAccept(msg -> {
+			partner.ready();
+			partner.getFutureMessage(NetMessage.MSG_READY).thenAccept(msg -> {
 				LOGGER.finer("I should start the game");
 			}).thenRun(() -> Platform.runLater(() -> {
 				// Remove side panel with ships and redraw grid
 				gameSceneLayout.setLeft(null);
 				grid.draw();
 			})).exceptionally(e -> {
-				final String msg = "Exception when waiting for partner's response to ready message";
-				LOGGER.log(Level.WARNING, msg, e);
-				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-				randomButton.setDisable(false);
+				if (!(e.getCause() instanceof InterruptedException)) {
+					final String msg = "Error when waiting for partner to ready up";
+					LOGGER.log(Level.WARNING, msg, e);
+					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+					randomButton.setDisable(false);
+				} else {
+					LOGGER.info("Interrupted while waiting for partner to ready up");
+					randomButton.setDisable(false);
+				}
 				return null;
 			});
 
@@ -115,5 +140,7 @@ public class GameSceneController {
 			LOGGER.log(Level.WARNING, msg, e);
 			new Alert(Alert.AlertType.WARNING, msg).showAndWait();
 		}
+
+		grid.draw();
 	}
 }

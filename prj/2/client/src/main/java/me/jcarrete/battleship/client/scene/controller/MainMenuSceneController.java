@@ -9,7 +9,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import me.jcarrete.battleship.client.BattleshipClient;
 import me.jcarrete.battleship.client.net.ServerConnection;
-import me.jcarrete.battleship.client.scene.GameScene;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -42,8 +41,7 @@ public class MainMenuSceneController {
 					LOGGER.info("Starting game setup");
 					final Stage stage = (Stage)((Button)event.getSource()).getScene().getWindow();
 					BattleshipClient.setPartner(partner);
-					LOGGER.info(Thread.currentThread().getName());
-					Platform.runLater(() -> stage.setScene(new GameScene(stage, isHost, partner)));
+					Platform.runLater(() -> BattleshipClient.switchToGameScene(stage, isHost, partner));
 				}).exceptionally(ex -> {
 					String msg = "Failed to find a partner";
 					LOGGER.log(Level.WARNING, msg, ex);

@@ -28,13 +28,12 @@ public class GameScene extends Scene {
 
 	private Stage stage;
 
-	public GameScene(Stage stage, boolean isHost, PartnerConnection partner) {
+	public GameScene(Stage stage) {
 		super(gameSceneRoot);
 		this.stage = stage;
+	}
 
-		GameSceneController controller = fxmlLoader.getController();
-		controller.setup(partner, isHost);
-
-		stage.centerOnScreen();
+	public void setup(boolean isHost, PartnerConnection partner) {
+		fxmlLoader.<GameSceneController>getController().setup(stage, partner, isHost);
 	}
 }

@@ -2,13 +2,12 @@ package me.jcarrete.battleship.client.net;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.logging.Level;
 
 import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
@@ -20,13 +19,36 @@ public class PartnerConnection implements AutoCloseable {
 	private Socket socket;
 	private DataInputStream in;
 	private DataOutputStream out;
-	private ExecutorService executor;
+	private ExecutorService executorService;
+	private LinkedBlockingQueue<NetMessage> messageQueue;
+	private Thread receiveMessageThread;
 
 	PartnerConnection(Socket s) throws IOException {
 		socket = s;
 		in = new DataInputStream(s.getInputStream());
 		out = new DataOutputStream(s.getOutputStream());
-		executor = Executors.newSingleThreadExecutor();
+		executorService = Executors.newCachedThreadPool();
+		messageQueue = new LinkedBlockingQueue<>();
+		receiveMessageThread = new Thread(() -> {
+			while (!Thread.interrupted()) {
+				try {
+					NetMessage msg = receive();
+					messageQueue.put(msg);
+				} catch (SocketException e) {
+					LOGGER.info("Input stream to partner closed");
+					Thread.currentThread().interrupt();
+				} catch (EOFException e) {
+					LOGGER.info("Input stream has ended");
+					Thread.currentThread().interrupt();
+				} catch (IOException e) {
+					LOGGER.log(Level.WARNING, "Dropped a message", e);
+				} catch (InterruptedException e) {
+					LOGGER.info("receiveMessageThread interrupted");
+					Thread.currentThread().interrupt();
+				}
+			}
+		}, "receive-message-thread");
+		receiveMessageThread.start();
 	}
 
 	public String remoteAddressAndPortAsString() {
@@ -41,6 +63,8 @@ public class PartnerConnection implements AutoCloseable {
 	 * @throws SocketException when the input stream is closed during a read
 	 * @throws IOException the input stream has been closed and the contained input
 	 * stream does not support reading after close, or another I/O error occurs.
+	 * @throws EOFException the input stream has reached the end (usually due to
+	 * socket being closed on other end.
 	 */
 	private NetMessage receive() throws IOException {
 		LOGGER.fine("Waiting for a message from the partner...");
@@ -66,43 +90,50 @@ public class PartnerConnection implements AutoCloseable {
 	 * @return A {@link CompletableFuture} with the {@link NetMessage}
 	 * received from the partner.
 	 */
-	private CompletableFuture<NetMessage> getFutureMessage() {
-//		CompletableFuture<NetMessage> future = new CompletableFuture<>();
-//		executor.execute(() -> {
-//			try {
-//				future.complete(receive());
-//			} catch (IOException e) {
-//				future.completeExceptionally(e);
-//			}
-//		});
-//		return future;
+	public CompletableFuture<NetMessage> getFutureMessage(final int msgType) {
 		return CompletableFuture.supplyAsync(() -> {
 			try {
-				return receive();
-			} catch (IOException e) {
+				NetMessage msg = messageQueue.take();
+				while (msg.getMsgType() != msgType) {
+					messageQueue.put(msg);
+					msg = messageQueue.take();
+					Thread.yield();
+				}
+				return msg;
+			} catch (InterruptedException e) {
 				throw new CompletionException(e);
 			}
-		}, executor);
+		}, executorService);
 	}
 
 	/**
-	 * Tell foe that we are ready to play.
-	 * @return A {@link CompletableFuture<NetMessage>} with the response from the
-	 * partner after sending a ready message.
+	 * Tell partner that we are ready to play.
+	 * @throws IOException if an I/O error occurs when trying to send
+	 * the message.
 	 */
-	public CompletableFuture<NetMessage> ready() throws IOException {
+	public void ready() throws IOException {
 		LOGGER.fine("Sending ready message to partner...");
 		out.writeInt(NetMessage.MSG_READY);
 		out.writeInt(0);
 		LOGGER.fine("Sent ready message to partner");
+	}
 
-		return getFutureMessage();
+	/** Tell partner that I have quit the game.
+	 * @throws IOException if an I/O error occurs when trying to send
+	 * the message.
+	 */
+	public void quit() throws IOException {
+		LOGGER.fine("Sending quit message to partner...");
+		out.writeInt(NetMessage.MSG_QUIT);
+		out.writeInt(0);
+		LOGGER.fine("Sent quit message to partner");
 	}
 
 	@Override
 	public void close() throws IOException {
 		LOGGER.info("Closing partner...");
-		executor.shutdownNow();
+		receiveMessageThread.interrupt();
+		executorService.shutdownNow();
 		socket.close();
 		LOGGER.info("Partner closed");
 	}

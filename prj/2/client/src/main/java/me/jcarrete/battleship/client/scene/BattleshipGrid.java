@@ -56,7 +56,6 @@ public class BattleshipGrid extends Canvas {
 	private void onMouseMoved(MouseEvent event) {
 		int[] index = pointToGrid(event.getX(), event.getY());
 		int curRow = index[0], curCol = index[1];
-		boolean draw = false;
 
 		// If we didn't move out of the last cell, then do nothing
 		if (lastPos[0] == curRow && lastPos[1] == curCol) return;
@@ -64,22 +63,18 @@ public class BattleshipGrid extends Canvas {
 		// Remove highlight on last position if it exists and isn't the target
 		if (lastPos[0] >= 0 && lastPos[1] >= 0 && !(lastPos[0] == targetPos[0] && lastPos[1] == targetPos[1])) {
 			cellHighlights[lastPos[0]][lastPos[1]] = null;
-			draw = true;
 		}
 
 		// If target position is not the current position
 		if (!(targetPos[0] == curRow && targetPos[1] == curCol)) {
 			// Then highlight current position
 			cellHighlights[curRow][curCol] = Color.color(0, 0, 1, 0.5);
-			draw = true;
 		}
 
 		lastPos[0] = curRow;
 		lastPos[1] = curCol;
 
-		if (draw) {
-			draw();
-		}
+		draw();
 	}
 
 	private void onMouseExited(MouseEvent event) {

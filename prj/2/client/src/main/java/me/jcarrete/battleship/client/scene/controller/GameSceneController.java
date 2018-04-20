@@ -151,4 +151,10 @@ public class GameSceneController {
 
 		grid.draw();
 	}
+
+	@FXML
+	private void onFirePress(ActionEvent event) {
+		LOGGER.fine("onFirePress() called");
+
+	}
 }

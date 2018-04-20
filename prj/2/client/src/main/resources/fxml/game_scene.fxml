@@ -20,7 +20,7 @@
       <VBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="100.0" spacing="25.0">
          <children>
             <Label fx:id="turnIndicator" text="&lt;turnIndicator&gt;" textAlignment="CENTER" wrapText="true" />
-            <Button mnemonicParsing="false" text="Fire!" />
+            <Button mnemonicParsing="false" text="Fire!" onAction="#onFirePress" />
             <VBox fx:id="notificationsBox" prefHeight="200.0" prefWidth="100.0" spacing="10.0" />
          </children>
          <padding>

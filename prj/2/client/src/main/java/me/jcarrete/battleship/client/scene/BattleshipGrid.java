@@ -26,7 +26,7 @@ public class BattleshipGrid extends Canvas {
 	public BattleshipGrid() {
 		ships = new ArrayList<>(5);
 		cells = new Ship[ROWS][COLS];
-		cellHighlights = new Color[ROWS][COLS];
+		cellHighlights = new Color[ROWS / 2][COLS];
 		lastPos = new int[] {-1, -1};
 		targetPos = new int[] {-2, -2};
 		setOnMouseMoved(this::onMouseMoved);
@@ -41,6 +41,10 @@ public class BattleshipGrid extends Canvas {
 	private void onMouseClicked(MouseEvent event) {
 		int[] index = pointToGrid(event.getX(), event.getY());
 		int curRow = index[0], curCol = index[1];
+
+		// Ignore clicks on bottom half
+		if (curRow >= ROWS / 2) return;
+
 		if (targetPos[0] >= 0 && targetPos[1] >= 0) {
 			// Unmark last target position
 			cellHighlights[targetPos[0]][targetPos[1]] = null;
@@ -59,6 +63,8 @@ public class BattleshipGrid extends Canvas {
 
 		// If we didn't move out of the last cell, then do nothing
 		if (lastPos[0] == curRow && lastPos[1] == curCol) return;
+		// Ignore movement on bottom half
+		if (curRow >= ROWS / 2) return;
 
 		// Remove highlight on last position if it exists and isn't the target
 		if (lastPos[0] >= 0 && lastPos[1] >= 0 && !(lastPos[0] == targetPos[0] && lastPos[1] == targetPos[1])) {
@@ -78,10 +84,9 @@ public class BattleshipGrid extends Canvas {
 	}
 
 	private void onMouseExited(MouseEvent event) {
-		if (lastPos[0] >= 0 && lastPos[1] >= 0) {
+		if (lastPos[0] >= 0 && lastPos[1] >= 0 && !(lastPos[0] == targetPos[0] && lastPos[1] == targetPos[1])) {
 			cellHighlights[lastPos[0]][lastPos[1]] = null;
 		}
-		lastPos[0] = lastPos[1] = -1;
 		draw();
 	}
 
@@ -112,7 +117,7 @@ public class BattleshipGrid extends Canvas {
 
 		// Draw highlights
 		g.save();
-		for (int row = 0; row < ROWS; row++) {
+		for (int row = 0; row < ROWS / 2; row++) {
 			for (int col = 0; col < COLS; col++) {
 				if (cellHighlights[row][col] == null) continue;
 				g.setFill(cellHighlights[row][col]);

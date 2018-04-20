@@ -7,8 +7,6 @@ import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
 
-import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
-
 /**
  * Represents the top and bottom grid and records information
  * about where shots have been fired and where pieces have been placed
@@ -23,36 +21,69 @@ public class BattleshipGrid extends Canvas {
 	// green = hit, red = miss, blue = mouseHover, orange = fireLocation
 	private Color[][] cellHighlights;
 	private int[] lastPos;
+	private int[] targetPos;
 
 	public BattleshipGrid() {
 		ships = new ArrayList<>(5);
 		cells = new Ship[ROWS][COLS];
 		cellHighlights = new Color[ROWS][COLS];
 		lastPos = new int[] {-1, -1};
+		targetPos = new int[] {-2, -2};
 		setOnMouseMoved(this::onMouseMoved);
 		setOnMouseExited(this::onMouseExited);
+		setOnMouseClicked(this::onMouseClicked);
 	}
 
 	private int[] pointToGrid(double x, double y) {
 		return new int[] {(int)(y / CELL_SIZE), (int)(x / CELL_SIZE)};
 	}
 
+	private void onMouseClicked(MouseEvent event) {
+		int[] index = pointToGrid(event.getX(), event.getY());
+		int curRow = index[0], curCol = index[1];
+		if (targetPos[0] >= 0 && targetPos[1] >= 0) {
+			// Unmark last target position
+			cellHighlights[targetPos[0]][targetPos[1]] = null;
+		}
+
+		targetPos[0] = curRow;
+		targetPos[1] = curCol;
+
+		cellHighlights[curRow][curCol] = Color.color(1, 0.5, 0, 0.5);
+		draw();
+	}
+
 	private void onMouseMoved(MouseEvent event) {
 		int[] index = pointToGrid(event.getX(), event.getY());
-		int r = index[0], c = index[1];
-		if (!(lastPos[0] == r && lastPos[1] == c)) {
-			if (lastPos[0] != -1 && lastPos[1] != -1) {
-				cellHighlights[lastPos[0]][lastPos[1]] = null;
-			}
-			cellHighlights[r][c] = Color.color(0, 0, 1, 0.5);
-			lastPos[0] = r;
-			lastPos[1] = c;
+		int curRow = index[0], curCol = index[1];
+		boolean draw = false;
+
+		// If we didn't move out of the last cell, then do nothing
+		if (lastPos[0] == curRow && lastPos[1] == curCol) return;
+
+		// Remove highlight on last position if it exists and isn't the target
+		if (lastPos[0] >= 0 && lastPos[1] >= 0 && !(lastPos[0] == targetPos[0] && lastPos[1] == targetPos[1])) {
+			cellHighlights[lastPos[0]][lastPos[1]] = null;
+			draw = true;
+		}
+
+		// If target position is not the current position
+		if (!(targetPos[0] == curRow && targetPos[1] == curCol)) {
+			// Then highlight current position
+			cellHighlights[curRow][curCol] = Color.color(0, 0, 1, 0.5);
+			draw = true;
+		}
+
+		lastPos[0] = curRow;
+		lastPos[1] = curCol;
+
+		if (draw) {
 			draw();
 		}
 	}
 
 	private void onMouseExited(MouseEvent event) {
-		if (lastPos[0] != -1 && lastPos[1] != -1) {
+		if (lastPos[0] >= 0 && lastPos[1] >= 0) {
 			cellHighlights[lastPos[0]][lastPos[1]] = null;
 		}
 		lastPos[0] = lastPos[1] = -1;

@@ -22,7 +22,7 @@ public class NetMessage {
 	public static final int MSG_FIRE = 2;
 
 	/**
-	 *
+	 * Body Length: 0 bytes
 	 */
 	public static final int MSG_QUIT = 3;
 

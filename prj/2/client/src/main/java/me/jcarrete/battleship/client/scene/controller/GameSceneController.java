@@ -71,6 +71,21 @@ public class GameSceneController {
 		grid.draw();
 	}
 
+	private void takeTurn() {
+		partner.getFutureMessage(NetMessage.MSG_FIRE_RESULT).thenAccept(msg -> {
+			hasTurn = false;
+			waitForTurn();
+		});
+	}
+
+	private void waitForTurn() {
+		partner.getFutureMessage(NetMessage.MSG_FIRE).thenAccept(msg -> {
+			int index = msg.getBody().getInt();
+			hasTurn = true;
+			takeTurn();
+		});
+	}
+
 	@FXML
 	private void onRandomPress(ActionEvent event) {
 		LOGGER.finest("onRandomPress called");
@@ -129,7 +144,15 @@ public class GameSceneController {
 				// Remove side panel with ships and redraw grid
 				gameSceneLayout.setLeft(null);
 				grid.draw();
-				turnIndicator.setText(hasTurn ? "Make your move!" : "Waiting...");
+
+				//TODO Might have to avoid making these calls recursive
+				if (hasTurn) {
+					turnIndicator.setText("Make your move!");
+					takeTurn();
+				} else {
+					turnIndicator.setText("Waiting...");
+					waitForTurn();
+				}
 			})).exceptionally(e -> {
 				if (!(e.getCause() instanceof InterruptedException)) {
 					final String msg = "Error when waiting for partner to ready up";
@@ -160,6 +183,11 @@ public class GameSceneController {
 
 		if (index < 0) {
 			new Alert(Alert.AlertType.INFORMATION, "No target selected").showAndWait();
+			return;
+		}
+
+		if (!hasTurn) {
+			new Alert(Alert.AlertType.INFORMATION, "It is not your turn").showAndWait();
 			return;
 		}
 

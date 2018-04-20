@@ -34,6 +34,10 @@ public class BattleshipGrid extends Canvas {
 		setOnMouseClicked(this::onMouseClicked);
 	}
 
+	public int getTargetPos() {
+		return targetPos[0] * COLS + targetPos[1];
+	}
+
 	private int[] pointToGrid(double x, double y) {
 		return new int[] {(int)(y / CELL_SIZE), (int)(x / CELL_SIZE)};
 	}

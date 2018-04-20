@@ -129,6 +129,7 @@ public class GameSceneController {
 				// Remove side panel with ships and redraw grid
 				gameSceneLayout.setLeft(null);
 				grid.draw();
+				turnIndicator.setText(hasTurn ? "Make your move!" : "Waiting...");
 			})).exceptionally(e -> {
 				if (!(e.getCause() instanceof InterruptedException)) {
 					final String msg = "Error when waiting for partner to ready up";
@@ -155,6 +156,20 @@ public class GameSceneController {
 	@FXML
 	private void onFirePress(ActionEvent event) {
 		LOGGER.fine("onFirePress() called");
+		int index = grid.getTargetPos();
 
+		if (index < 0) {
+			new Alert(Alert.AlertType.INFORMATION, "No target selected").showAndWait();
+			return;
+		}
+
+		try {
+			partner.fireAt(index);
+			partner.getFutureMessage(NetMessage.MSG_FIRE_RESULT).thenAccept(msg -> {
+
+			});
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, "Failed to send fire message", e);
+		}
 	}
 }

@@ -1,3 +1,4 @@
+//JA: No test class?
 public class Circle extends GeometricObject implements Comparable<Circle> {
 
 	private double radius;

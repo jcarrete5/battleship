@@ -6,6 +6,9 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+
+import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
 
 /**
  * Represents the top and bottom grid and records information
@@ -13,6 +16,7 @@ import java.util.ArrayList;
  */
 public class BattleshipGrid extends Canvas {
 
+	public static final int MISS = 0, HIT = 1, SUNK = 2;
 	public static final int ROWS = 20, COLS = 10;
 	public static final int CELL_SIZE = 25;
 
@@ -22,6 +26,7 @@ public class BattleshipGrid extends Canvas {
 	private Color[][] cellHighlights;
 	private int[] lastPos;
 	private int[] targetPos;
+	private HashSet<Integer> untargetable;
 
 	public BattleshipGrid() {
 		ships = new ArrayList<>(5);
@@ -29,16 +34,25 @@ public class BattleshipGrid extends Canvas {
 		cellHighlights = new Color[ROWS / 2][COLS];
 		lastPos = new int[] {-1, -1};
 		targetPos = new int[] {-2, -2};
+		untargetable = new HashSet<>();
 		setOnMouseMoved(this::onMouseMoved);
 		setOnMouseExited(this::onMouseExited);
 		setOnMouseClicked(this::onMouseClicked);
 	}
 
 	public int getTargetPos() {
-		return targetPos[0] * COLS + targetPos[1];
+		return toIndex(targetPos[0], targetPos[1]);
 	}
 
-	private int[] pointToGrid(double x, double y) {
+	private static int toIndex(int row, int col) {
+		return row * COLS + col;
+	}
+
+	private static int[] toPoint(int index) {
+		return new int[] {index / COLS, index % COLS};
+	}
+
+	private static int[] pointToGrid(double x, double y) {
 		return new int[] {(int)(y / CELL_SIZE), (int)(x / CELL_SIZE)};
 	}
 
@@ -48,9 +62,10 @@ public class BattleshipGrid extends Canvas {
 
 		// Ignore clicks on bottom half
 		if (curRow >= ROWS / 2) return;
-
+		// Don't allow targeting of already targeted cells
+		if (untargetable.contains(toIndex(curRow, curCol))) return;
+		// Unmark last target position
 		if (targetPos[0] >= 0 && targetPos[1] >= 0) {
-			// Unmark last target position
 			cellHighlights[targetPos[0]][targetPos[1]] = null;
 		}
 
@@ -62,13 +77,25 @@ public class BattleshipGrid extends Canvas {
 	}
 
 	private void onMouseMoved(MouseEvent event) {
-		int[] index = pointToGrid(event.getX(), event.getY());
-		int curRow = index[0], curCol = index[1];
+		int[] curPos = pointToGrid(event.getX(), event.getY());
+		int curRow = curPos[0], curCol = curPos[1];
 
 		// If we didn't move out of the last cell, then do nothing
 		if (lastPos[0] == curRow && lastPos[1] == curCol) return;
 		// Ignore movement on bottom half
-		if (curRow >= ROWS / 2) return;
+		if (curRow >= ROWS / 2) {
+			if (!untargetable.contains(toIndex(lastPos[0], lastPos[1]))) {
+				cellHighlights[lastPos[0]][lastPos[1]] = null;
+				draw();
+			}
+			return;
+		}
+		// Don't highlight cells which can't be targeted
+		if (untargetable.contains(toIndex(curRow, curCol))) {
+			cellHighlights[lastPos[0]][lastPos[1]] = null;
+			draw();
+			return;
+		}
 
 		// Remove highlight on last position if it exists and isn't the target
 		if (lastPos[0] >= 0 && lastPos[1] >= 0 && !(lastPos[0] == targetPos[0] && lastPos[1] == targetPos[1])) {
@@ -129,6 +156,59 @@ public class BattleshipGrid extends Canvas {
 			}
 		}
 		g.restore();
+	}
+
+	/**
+	 * Update the color of the target cell based on whether or not it was hit.
+	 * @param targetIndex
+	 * @param hitStatus
+	 */
+	public void setHitColor(int targetIndex, int hitStatus) {
+		int[] pos = toPoint(targetIndex);
+		int r = pos[0], c = pos[1];
+
+		if (hitStatus == MISS) {
+			cellHighlights[r][c] = Color.color(1, 0, 0, 0.5);
+		} else if (hitStatus == HIT || hitStatus == SUNK) {
+			cellHighlights[r][c] = Color.color(0, 1, 0, 0.5);
+		}
+		draw();
+	}
+
+	/**
+	 * Check if a specific cell on the grid has been hit
+	 * @param r
+	 * @param c
+	 * @return
+	 */
+	public int getHitStatus(int r, int c) {
+		LOGGER.info(String.format("Checking if cells[%d][%d] has been hit...", r, c));
+
+		int hit = MISS;
+		if (cells[r][c] != null) {
+			hit = HIT;
+			cells[r][c].hit();
+			if (cells[r][c].isSunk()) {
+				LOGGER.info("You sunk my battleship!");
+				LOGGER.info("Battleship length: " + cells[r][c].length());
+				hit = SUNK;
+			} else {
+				LOGGER.info("Hit!");
+			}
+		} else {
+			LOGGER.info("Miss!");
+		}
+
+		return hit;
+	}
+
+	public void disableTarget() {
+		untargetable.add(getTargetPos());
+	}
+
+	public void resetTargetPosition() {
+		targetPos[0] = -2;
+		targetPos[1] = -2;
 	}
 
 	/**

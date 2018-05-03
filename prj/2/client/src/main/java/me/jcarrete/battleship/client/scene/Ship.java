@@ -30,8 +30,6 @@ public class Ship {
 		}
 
 		pos = new Point2D(col * BattleshipGrid.CELL_SIZE + OFFSET, row * BattleshipGrid.CELL_SIZE + OFFSET);
-
-//		LOGGER.fine(row, col);
 	}
 
 	public void draw(GraphicsContext g) {
@@ -44,6 +42,10 @@ public class Ship {
 
 	public void hit() {
 		timesHit++;
+	}
+
+	public boolean isSunk() {
+		return timesHit == length();
 	}
 
 	public int row() {

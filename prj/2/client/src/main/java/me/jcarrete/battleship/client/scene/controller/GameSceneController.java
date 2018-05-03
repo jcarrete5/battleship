@@ -17,9 +17,11 @@ import me.jcarrete.battleship.client.scene.BattleshipGrid;
 import me.jcarrete.battleship.client.scene.Ship;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.logging.Level;
 
 import static me.jcarrete.battleship.client.BattleshipClient.LOGGER;
+import static me.jcarrete.battleship.client.scene.BattleshipGrid.*;
 
 public class GameSceneController {
 
@@ -72,17 +74,57 @@ public class GameSceneController {
 	}
 
 	private void takeTurn() {
-		partner.getFutureMessage(NetMessage.MSG_FIRE_RESULT).thenAccept(msg -> {
+		Platform.runLater(() -> turnIndicator.setText("Make your move!"));
+		partner.getFutureMessage(NetMessage.MSG_FIRE_RESULT).thenAccept(netmsg -> {
+			// Must save body as variable because getBody() returns different
+			// read only byte buffer each time
+			ByteBuffer body = netmsg.getBody();
+			int targetIndex = body.getInt();
+			int hitStatus = body.getInt();
+
+			LOGGER.info(String.format("Got MSG_FIRE_RESULT. targetIndex: %d, hitStatus: %d", targetIndex, hitStatus));
+
+			Platform.runLater(() -> {
+				// Update my Battleship grid with the result of the firing
+				grid.setHitColor(targetIndex, hitStatus);
+
+				String msg = "";
+				if (hitStatus == MISS) {
+					msg = "Miss!";
+				} else if (hitStatus == HIT) {
+					msg = "Hit!";
+				} else if (hitStatus == SUNK) {
+					msg = "You sunk your foe's battleship!";
+				}
+				new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
+			});
+
 			hasTurn = false;
 			waitForTurn();
 		});
 	}
 
 	private void waitForTurn() {
-		partner.getFutureMessage(NetMessage.MSG_FIRE).thenAccept(msg -> {
-			int index = msg.getBody().getInt();
-			hasTurn = true;
-			takeTurn();
+		Platform.runLater(() -> turnIndicator.setText("Waiting..."));
+		partner.getFutureMessage(NetMessage.MSG_FIRE).thenAccept(netmsg -> {
+			int index = netmsg.getBody().getInt();
+
+			// Check if a ship has been hit
+			int r = index / BattleshipGrid.COLS, c = index % BattleshipGrid.COLS;
+			// hitStatus can be MISS = 0, HIT = 1, or SUNK = 2
+			int hitStatus = grid.getHitStatus(r, c);
+
+			try {
+				// Convert index back to refer to partners top of grid for marking
+				int newIndex = (r - 10) * BattleshipGrid.COLS + c;
+				partner.respondToFire(newIndex, hitStatus);
+				hasTurn = true;
+				takeTurn();
+			} catch (IOException e) {
+				final String msg = "Failed to send fire response to partner";
+				LOGGER.log(Level.WARNING, msg, e);
+				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+			}
 		});
 	}
 
@@ -140,20 +182,19 @@ public class GameSceneController {
 			partner.ready();
 			partner.getFutureMessage(NetMessage.MSG_READY).thenAccept(msg -> {
 				LOGGER.finer("I should start the game");
-			}).thenRun(() -> Platform.runLater(() -> {
-				// Remove side panel with ships and redraw grid
-				gameSceneLayout.setLeft(null);
-				grid.draw();
+				Platform.runLater(() -> {
+					// Remove side panel with ships and redraw grid
+					gameSceneLayout.setLeft(null);
+					grid.draw();
 
-				//TODO Might have to avoid making these calls recursive
-				if (hasTurn) {
-					turnIndicator.setText("Make your move!");
-					takeTurn();
-				} else {
-					turnIndicator.setText("Waiting...");
-					waitForTurn();
-				}
-			})).exceptionally(e -> {
+					//TODO Might have to avoid making these calls recursive
+					if (hasTurn) {
+						takeTurn();
+					} else {
+						waitForTurn();
+					}
+				});
+			}).exceptionally(e -> {
 				if (!(e.getCause() instanceof InterruptedException)) {
 					final String msg = "Error when waiting for partner to ready up";
 					LOGGER.log(Level.WARNING, msg, e);
@@ -179,23 +220,29 @@ public class GameSceneController {
 	@FXML
 	private void onFirePress(ActionEvent event) {
 		LOGGER.fine("onFirePress() called");
-		int index = grid.getTargetPos();
+		event.consume();
+		// Sanitize target position so it targets the correct spot for the partner
+		int targetIndex = grid.getTargetPos() + BattleshipGrid.ROWS / 2 * BattleshipGrid.COLS;
 
-		if (index < 0) {
+		if (grid.getTargetPos() < 0) {
 			new Alert(Alert.AlertType.INFORMATION, "No target selected").showAndWait();
 			return;
 		}
 
 		if (!hasTurn) {
+			grid.resetTargetPosition();
+			grid.draw();
 			new Alert(Alert.AlertType.INFORMATION, "It is not your turn").showAndWait();
 			return;
 		}
 
 		try {
-			partner.fireAt(index);
-			partner.getFutureMessage(NetMessage.MSG_FIRE_RESULT).thenAccept(msg -> {
+			partner.fireAt(targetIndex);
 
-			});
+			// Mark the target as untargetable now so the user doesn't fire at the same spot
+			grid.disableTarget();
+			grid.resetTargetPosition();
+			grid.draw();
 		} catch (IOException e) {
 			LOGGER.log(Level.WARNING, "Failed to send fire message", e);
 		}

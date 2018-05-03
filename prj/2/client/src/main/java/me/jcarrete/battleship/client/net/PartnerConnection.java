@@ -137,6 +137,15 @@ public class PartnerConnection implements AutoCloseable {
 		LOGGER.fine("Sent fire message to partner");
 	}
 
+	public void respondToFire(int targetIndex, int hitStatus) throws IOException {
+		LOGGER.fine("Sending fire response to partner...");
+		out.writeInt(NetMessage.MSG_FIRE_RESULT);
+		out.writeInt(8);
+		out.writeInt(targetIndex);
+		out.writeInt(hitStatus);
+		LOGGER.fine("Sent fire response to partner");
+	}
+
 	@Override
 	public void close() throws IOException {
 		LOGGER.info("Closing partner...");

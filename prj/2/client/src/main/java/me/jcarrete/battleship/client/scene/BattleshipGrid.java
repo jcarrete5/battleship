@@ -19,6 +19,7 @@ public class BattleshipGrid extends Canvas {
 	public static final int MISS = 0, HIT = 1, SUNK = 2;
 	public static final int ROWS = 20, COLS = 10;
 	public static final int CELL_SIZE = 25;
+	public static final int MAX_SHIP_COUNT = 5;
 
 	private ArrayList<Ship> ships;
 	private Ship[][] cells;
@@ -200,6 +201,16 @@ public class BattleshipGrid extends Canvas {
 		}
 
 		return hit;
+	}
+
+	public boolean checkLose() {
+		int sunkCount = 0;
+		for (Ship ship : ships) {
+			if (ship.isSunk()) {
+				sunkCount++;
+			}
+		}
+		return sunkCount == MAX_SHIP_COUNT;
 	}
 
 	public void disableTarget() {

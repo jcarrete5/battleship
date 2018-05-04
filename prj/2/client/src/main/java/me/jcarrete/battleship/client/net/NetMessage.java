@@ -15,19 +15,16 @@ public class NetMessage {
 	 * Body Length: 0 bytes
 	 */
 	public static final int MSG_READY = 1;
-
 	/**
 	 * Body Length: 4 bytes,
 	 * Body:
 	 *      targetIndex: 4 bytes
 	 */
 	public static final int MSG_FIRE = 2;
-
 	/**
 	 * Body Length: 0 bytes
 	 */
 	public static final int MSG_QUIT = 3;
-
 	/**
 	 * Body Length: 8 bytes,
 	 * Body:
@@ -35,6 +32,10 @@ public class NetMessage {
 	 *      hitStatus: 4 bytes
 	 */
 	public static final int MSG_FIRE_RESULT = 4;
+	/**
+	 * Body Length: 0 bytes
+	 */
+	public static final int MSG_LOSE = 5;
 
 	private final int msgType;
 	private final int bodyLength;

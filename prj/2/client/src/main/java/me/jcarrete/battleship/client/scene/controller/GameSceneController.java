@@ -66,6 +66,11 @@ public class GameSceneController {
 			}
 		});
 
+		// Handle partner losing the game
+		partner.getFutureMessage(NetMessage.MSG_LOSE).thenAccept(msg -> {
+			onWin();
+		});
+
 		turnIndicator.setText("Waiting for opponent");
 		gameSceneLayout.setLeft(leftNode);
 		randomButton.setDisable(false);
@@ -99,9 +104,26 @@ public class GameSceneController {
 				new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
 			});
 
-			hasTurn = false;
-			waitForTurn();
+			if (grid.checkLose()) {
+				onLose();
+			} else {
+				hasTurn = false;
+				waitForTurn();
+			}
 		});
+	}
+
+	private void onWin() {
+		Platform.runLater(() -> new Alert(Alert.AlertType.INFORMATION, "You Won!").showAndWait());
+	}
+
+	private void onLose() {
+		try {
+			partner.sendLose();
+			Platform.runLater(() -> new Alert(Alert.AlertType.INFORMATION, "You Lost!").showAndWait());
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, "Failed to send lose message to partner", e);
+		}
 	}
 
 	private void waitForTurn() {

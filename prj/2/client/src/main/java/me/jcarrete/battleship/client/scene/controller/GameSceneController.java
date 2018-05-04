@@ -83,7 +83,7 @@ public class GameSceneController {
 	private void takeTurn() {
 		Platform.runLater(() -> turnIndicator.setText("Make your move!"));
 		partner.getFutureMessage(NetMessage.MSG_FIRE_RESULT).thenAccept(netmsg -> {
-			// Must save body as variable because getBody() returns different
+			// Must save body as variable because getBody() returns unique
 			// read only byte buffer each time
 			ByteBuffer body = netmsg.getBody();
 			int targetIndex = body.getInt();
@@ -92,10 +92,6 @@ public class GameSceneController {
 			LOGGER.info(String.format("Got MSG_FIRE_RESULT. targetIndex: %d, hitStatus: %d", targetIndex, hitStatus));
 
 			Platform.runLater(() -> {
-				// Update my Battleship grid with the result of the firing
-				grid.setHitColor(targetIndex, hitStatus);
-				grid.draw();
-
 				String msg = "";
 				if (hitStatus == MISS) {
 					msg = "Miss!";
@@ -104,6 +100,9 @@ public class GameSceneController {
 				} else if (hitStatus == SUNK) {
 					msg = "You sunk your foe's battleship!";
 				}
+				// Update my Battleship grid with the result of the firing
+				grid.setHitColor(targetIndex, hitStatus);
+				grid.draw();
 				new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
 			});
 
@@ -121,6 +120,11 @@ public class GameSceneController {
 			int r = index / BattleshipGrid.COLS, c = index % BattleshipGrid.COLS;
 			// hitStatus can be MISS = 0, HIT = 1, or SUNK = 2
 			int hitStatus = grid.getHitStatus(r, c);
+			// Color my grid to see where my opponent has fired
+			Platform.runLater(() -> {
+				grid.setHitColor(index, hitStatus);
+				grid.draw();
+			});
 
 			if (grid.checkLose()) {
 				onLose();

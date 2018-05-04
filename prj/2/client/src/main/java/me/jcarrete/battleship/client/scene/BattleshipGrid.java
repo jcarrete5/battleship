@@ -151,8 +151,8 @@ public class BattleshipGrid extends Canvas {
 
 		// Draw highlights
 		g.save();
-		for (int row = 0; row < ROWS / 2; row++) {
-			for (int col = 0; col < COLS; col++) {
+		for (int row = 0; row < cellHighlights.length; row++) {
+			for (int col = 0; col < cellHighlights[row].length; col++) {
 				if (cellHighlights[row][col] == null) continue;
 				g.setFill(cellHighlights[row][col]);
 				g.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);

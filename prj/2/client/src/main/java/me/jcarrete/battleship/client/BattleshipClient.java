@@ -85,7 +85,9 @@ public class BattleshipClient extends Application {
 	public void stop() throws Exception {
 		LOGGER.fine("Stop called");
 		if (partner != null) {
-			partner.quit();
+			if (!partner.isClosed()) {
+				partner.quit();
+			}
 			partner.close();
 		}
 	}

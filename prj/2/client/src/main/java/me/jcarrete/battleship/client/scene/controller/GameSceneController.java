@@ -27,6 +27,7 @@ public class GameSceneController {
 
 	private PartnerConnection partner;
 	private boolean hasTurn;
+	private Stage stage;
 
 	@FXML private BorderPane gameSceneLayout;
 	@FXML private Button randomButton;
@@ -50,6 +51,7 @@ public class GameSceneController {
 	public void setup(Stage stage, PartnerConnection partner, boolean hasTurn) {
 		this.partner = partner;
 		this.hasTurn = hasTurn;
+		this.stage = stage;
 
 		// Handle partner quitting game
 		partner.getFutureMessage(NetMessage.MSG_QUIT).thenAccept(msg -> {
@@ -92,6 +94,7 @@ public class GameSceneController {
 			Platform.runLater(() -> {
 				// Update my Battleship grid with the result of the firing
 				grid.setHitColor(targetIndex, hitStatus);
+				grid.draw();
 
 				String msg = "";
 				if (hitStatus == MISS) {
@@ -104,26 +107,9 @@ public class GameSceneController {
 				new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
 			});
 
-			if (grid.checkLose()) {
-				onLose();
-			} else {
-				hasTurn = false;
-				waitForTurn();
-			}
+			hasTurn = false;
+			waitForTurn();
 		});
-	}
-
-	private void onWin() {
-		Platform.runLater(() -> new Alert(Alert.AlertType.INFORMATION, "You Won!").showAndWait());
-	}
-
-	private void onLose() {
-		try {
-			partner.sendLose();
-			Platform.runLater(() -> new Alert(Alert.AlertType.INFORMATION, "You Lost!").showAndWait());
-		} catch (IOException e) {
-			LOGGER.log(Level.WARNING, "Failed to send lose message to partner", e);
-		}
 	}
 
 	private void waitForTurn() {
@@ -136,18 +122,53 @@ public class GameSceneController {
 			// hitStatus can be MISS = 0, HIT = 1, or SUNK = 2
 			int hitStatus = grid.getHitStatus(r, c);
 
-			try {
-				// Convert index back to refer to partners top of grid for marking
-				int newIndex = (r - 10) * BattleshipGrid.COLS + c;
-				partner.respondToFire(newIndex, hitStatus);
-				hasTurn = true;
-				takeTurn();
-			} catch (IOException e) {
-				final String msg = "Failed to send fire response to partner";
-				LOGGER.log(Level.WARNING, msg, e);
-				Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+			if (grid.checkLose()) {
+				onLose();
+			} else {
+				try {
+					// Convert index back to refer to partners top of grid for marking
+					int newIndex = (r - 10) * BattleshipGrid.COLS + c;
+					partner.respondToFire(newIndex, hitStatus);
+					hasTurn = true;
+					takeTurn();
+				} catch (IOException e) {
+					final String msg = "Failed to send fire response to partner";
+					LOGGER.log(Level.WARNING, msg, e);
+					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
+				}
 			}
 		});
+	}
+
+	private void onWin() {
+		Platform.runLater(() -> {
+			new Alert(Alert.AlertType.INFORMATION, "You Won!").showAndWait();
+			BattleshipClient.switchToMainMenuScene(stage);
+			try {
+				partner.close();
+			} catch (IOException e) {
+				LOGGER.log(Level.WARNING, "Failed to close connection to partner", e);
+			}
+		});
+	}
+
+	private void onLose() {
+		try {
+			partner.sendLose();
+			Platform.runLater(() -> {
+				new Alert(Alert.AlertType.INFORMATION, "You Lost!").showAndWait();
+				BattleshipClient.switchToMainMenuScene(stage);
+			});
+		} catch (IOException e) {
+			LOGGER.log(Level.WARNING, "Failed to send lose message to partner", e);
+			Platform.runLater(() -> BattleshipClient.switchToMainMenuScene(stage));
+		} finally {
+			try {
+				partner.close();
+			} catch (IOException e) {
+				LOGGER.log(Level.WARNING, "Failed to close connection to partner", e);
+			}
+		}
 	}
 
 	@FXML

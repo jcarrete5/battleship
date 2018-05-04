@@ -153,6 +153,10 @@ public class PartnerConnection implements AutoCloseable {
 		LOGGER.fine("Sent lose message to partner");
 	}
 
+	public boolean isClosed() {
+		return socket.isClosed();
+	}
+
 	@Override
 	public void close() throws IOException {
 		LOGGER.info("Closing partner...");

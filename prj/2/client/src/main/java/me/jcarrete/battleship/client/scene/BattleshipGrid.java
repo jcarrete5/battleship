@@ -93,8 +93,10 @@ public class BattleshipGrid extends Canvas {
 		}
 		// Don't highlight cells which can't be targeted
 		if (untargetable.contains(toIndex(curRow, curCol))) {
-			cellHighlights[lastPos[0]][lastPos[1]] = null;
-			draw();
+			if (!untargetable.contains(toIndex(lastPos[0], lastPos[1]))) {
+				cellHighlights[lastPos[0]][lastPos[1]] = null;
+				draw();
+			}
 			return;
 		}
 
@@ -173,7 +175,6 @@ public class BattleshipGrid extends Canvas {
 		} else if (hitStatus == HIT || hitStatus == SUNK) {
 			cellHighlights[r][c] = Color.color(0, 1, 0, 0.5);
 		}
-		draw();
 	}
 
 	/**

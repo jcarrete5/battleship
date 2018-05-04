@@ -32,7 +32,7 @@ public class BattleshipGrid extends Canvas {
 	public BattleshipGrid() {
 		ships = new ArrayList<>(5);
 		cells = new Ship[ROWS][COLS];
-		cellHighlights = new Color[ROWS / 2][COLS];
+		cellHighlights = new Color[ROWS][COLS];
 		lastPos = new int[] {-1, -1};
 		targetPos = new int[] {-2, -2};
 		untargetable = new HashSet<>();
@@ -261,5 +261,9 @@ public class BattleshipGrid extends Canvas {
 	public void clear() {
 		ships.clear();
 		cells = new Ship[ROWS][COLS];
+		cellHighlights = new Color[ROWS][COLS];
+		lastPos = new int[] {-1, -1};
+		targetPos = new int[] {-2, -2};
+		untargetable = new HashSet<>();
 	}
 }

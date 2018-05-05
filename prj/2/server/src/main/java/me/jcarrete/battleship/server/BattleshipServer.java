@@ -11,8 +11,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.logging.*;
 
 public class BattleshipServer {
@@ -30,6 +29,7 @@ public class BattleshipServer {
 			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 				try {
 					if (!serverSocket.isClosed()) {
+						LOGGER.info("Closing server socket");
 						serverSocket.close();
 					}
 				} catch (IOException ex) {
@@ -45,6 +45,7 @@ public class BattleshipServer {
 				for (Socket s : connections) {
 					try {
 						if (!s.isClosed()) {
+							LOGGER.info("Closing socket: " + s);
 							s.close();
 						}
 					} catch (IOException ex) {
@@ -84,6 +85,12 @@ public class BattleshipServer {
 
 	private static Runnable matchmake(final BlockingQueue<Socket> connections) {
 		return () -> {
+			ExecutorService pairingService = Executors.newCachedThreadPool();
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				LOGGER.info("Shutting down pairing service...");
+				pairingService.shutdownNow();
+				LOGGER.info("Shutdown pairing service");
+			}));
 			while (!Thread.interrupted()) {
 				Socket s1, s2;
 
@@ -116,42 +123,43 @@ public class BattleshipServer {
 					other = s1;
 				}
 
-				// Send data to each player to determine who to connect to
-				try (DataOutputStream hostOut = new DataOutputStream(host.getOutputStream());
-				     DataInputStream hostIn = new DataInputStream(host.getInputStream());
-				     DataOutputStream otherOut = new DataOutputStream(other.getOutputStream())) {
+				pairingService.execute(() -> {
+					// Send data to each player to determine who to connect to
+					try (DataOutputStream hostOut = new DataOutputStream(host.getOutputStream());
+					     DataInputStream hostIn = new DataInputStream(host.getInputStream());
+					     DataOutputStream otherOut = new DataOutputStream(other.getOutputStream())) {
 
-					hostOut.writeBoolean(true);
-					otherOut.writeBoolean(false);
+						hostOut.writeBoolean(true);
+						otherOut.writeBoolean(false);
 
-					String hostAsString = socketAsString(host);
-					LOGGER.fine(hostAsString + " is a host");
-					LOGGER.fine("Waiting for " + hostAsString + " to setup p2p server socket");
+						String hostAsString = socketAsString(host);
+						LOGGER.fine(hostAsString + " is a host");
+						LOGGER.fine("Waiting for " + hostAsString + " to setup p2p server socket");
 
-					//FEATURE move this wait to another thread so the matchmaking thread can keep running
-					// Wait for host to be ready to receive connections
-					while (Message.valueOf(hostIn.readUTF()) != Message.HOST_READY) {
-						if (Thread.interrupted()) {
-							LOGGER.warning("Interrupted while waiting for " + Message.HOST_READY.name());
-							Thread.currentThread().interrupt();
-							throw new RuntimeException("Thread interrupted in the middle of IO");
+						// Wait for host to be ready to receive connections
+						while (Message.valueOf(hostIn.readUTF()) != Message.HOST_READY) {
+							if (Thread.interrupted()) {
+								LOGGER.warning("Interrupted while waiting for " + Message.HOST_READY.name());
+								Thread.currentThread().interrupt();
+								throw new RuntimeException("Thread interrupted in the middle of IO");
+							}
 						}
+
+						LOGGER.fine(hostAsString + " is ready to receive connections");
+
+						// Tell other player where to connect to
+						byte[] rawIp = host.getInetAddress().getAddress();
+						otherOut.writeInt(rawIp.length);
+						otherOut.write(rawIp);
+						otherOut.writeInt(host.getPort());
+					} catch (IOException ex) {
+						LOGGER.log(Level.WARNING, "Failed to match " + socketAsString(s1) + " and " + socketAsString(s2),
+								ex);
+						return;
 					}
 
-					LOGGER.fine(hostAsString + " is ready to receive connections");
-
-					// Tell other player where to connect to
-					byte[] rawIp = host.getInetAddress().getAddress();
-					otherOut.writeInt(rawIp.length);
-					otherOut.write(rawIp);
-					otherOut.writeInt(host.getPort());
-				} catch (IOException ex) {
-					LOGGER.log(Level.WARNING, "Failed to match " + socketAsString(s1) + " and " + socketAsString(s2),
-							ex);
-					continue;
-				}
-
-				LOGGER.info("Connection made between " + socketAsString(s1) + " and " + socketAsString(s2));
+					LOGGER.info("Connection made between " + socketAsString(s1) + " and " + socketAsString(s2));
+				});
 			}
 		};
 	}

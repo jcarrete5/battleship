@@ -11,7 +11,8 @@
 <?import me.jcarrete.battleship.client.scene.BattleshipGrid?>
 
 <BorderPane fx:id="gameSceneLayout" prefHeight="600.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/8.0.121"
-            xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.jcarrete.battleship.client.scene.GameScene$GameSceneController">
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="me.jcarrete.battleship.client.scene.controller.GameSceneController">
    <center>
       <BattleshipGrid fx:id="grid" height="500.0" width="250.0" />
    </center>
@@ -19,7 +20,7 @@
       <VBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="100.0" spacing="25.0">
          <children>
             <Label fx:id="turnIndicator" text="&lt;turnIndicator&gt;" textAlignment="CENTER" wrapText="true" />
-            <Button mnemonicParsing="false" text="Fire!" />
+            <Button mnemonicParsing="false" text="Fire!" onAction="#onFirePress" />
             <VBox fx:id="notificationsBox" prefHeight="200.0" prefWidth="100.0" spacing="10.0" />
          </children>
          <padding>
@@ -30,7 +31,9 @@
    <left>
       <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0" spacing="25.0">
          <children>
-            <ImageView fx:id="carrierView" fitHeight="25.0" fitWidth="125.0" pickOnBounds="true" preserveRatio="true">
+            <ImageView fx:id="carrierView" fitHeight="25.0" fitWidth="125.0"
+                       pickOnBounds="true"
+                       preserveRatio="true">
                <image>
                   <Image url="@../img/carrier.png" />
                </image>
@@ -56,7 +59,8 @@
                   <Image url="@../img/destroyer.png" />
                </image>
             </ImageView>
-            <Button mnemonicParsing="false" onAction="#onRandomPress" prefHeight="40.0" prefWidth="80.0" text="Random">
+            <Button fx:id="randomButton" mnemonicParsing="false" onAction="#onRandomPress" prefHeight="40.0"
+                    prefWidth="80.0" text="Random">
                <font>
                   <Font size="12.0" />
                </font>

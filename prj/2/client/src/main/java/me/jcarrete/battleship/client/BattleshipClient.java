@@ -1,18 +1,10 @@
 package me.jcarrete.battleship.client;
 
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import me.jcarrete.battleship.client.net.ServerConnection;
+import me.jcarrete.battleship.client.net.PartnerConnection;
 import me.jcarrete.battleship.client.scene.GameScene;
+import me.jcarrete.battleship.client.scene.MainMenuScene;
 import me.jcarrete.battleship.common.logging.ConsoleFormatter;
 import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
@@ -23,14 +15,38 @@ import java.util.logging.*;
 
 public class BattleshipClient extends Application {
 
+	private static MainMenuScene mainMenuScene;
+	private static GameScene gameScene;
+
 	public static void main(String[] args) {
 		launch(args);
+		LOGGER.finest("After launch in main()");
 	}
 
 	public static final Logger LOGGER = Logger.getLogger(BattleshipClient.class.getPackage().getName());
+	private static PartnerConnection partner;
+
+	public static void switchToMainMenuScene(Stage stage) {
+		stage.setScene(mainMenuScene);
+		stage.centerOnScreen();
+	}
+
+	public static void switchToGameScene(Stage stage, boolean isHost, PartnerConnection partner) {
+		gameScene.setup(isHost, partner);
+		stage.setScene(gameScene);
+		stage.centerOnScreen();
+	}
+
+	public static void setPartner(PartnerConnection partner) {
+		BattleshipClient.partner = partner;
+	}
 
 	@Override
 	public void init() throws Exception {
+		setupLogging();
+	}
+
+	private void setupLogging() {
 		final int MB = 1024 * 1024;
 		LOGGER.setUseParentHandlers(false);
 		LOGGER.setLevel(Level.ALL);
@@ -58,66 +74,22 @@ public class BattleshipClient extends Application {
 
 	@Override
 	public void start(Stage stage) throws Exception {
-		Parent root = FXMLLoader.load(ClassLoader.getSystemResource("fxml/main_menu.fxml"));
-
-		stage.setScene(new Scene(root, 400, 300));
+		mainMenuScene = new MainMenuScene(stage);
+		gameScene = new GameScene(stage);
+		stage.setScene(mainMenuScene);
 		stage.setTitle(BuildVersion.getImplTitle() + " v" + BuildVersion.getImplVersion());
 		stage.show();
 		stage.centerOnScreen();
 	}
 
-	@FXML
-	private void onSinglePress(ActionEvent event) {
-		new Alert(Alert.AlertType.INFORMATION, "Not implemented").showAndWait();
-	}
-
-	@FXML
-	private void onMultiPress(ActionEvent event) {
-		event.consume();
-		Dialog<Void> loadingDialog = new Dialog<>();
-		try (ServerConnection conn = ServerConnection.connectToGameServer(InetAddress.getLocalHost(), 10000)) {
-			conn.isHost().thenAccept(isHost ->
-				conn.findPartner(isHost).thenAccept(partner -> {
-					LOGGER.info("Found a partner with address " + partner.remoteAddressAndPortAsString());
-					LOGGER.info("Starting game");
-					final Stage stage = (Stage)((Button)event.getSource()).getScene().getWindow();
-					Platform.runLater(() -> stage.setScene(new GameScene(stage, isHost, partner)));
-				}).exceptionally(ex -> {
-					String msg = "Failed to find a partner";
-					LOGGER.log(Level.WARNING, msg, ex);
-					Platform.runLater(() -> new Alert(Alert.AlertType.WARNING, msg).showAndWait());
-					return null;
-				}).thenRun(() -> Platform.runLater(loadingDialog::close))
-			).exceptionally(ex -> {
-				String msg = "Failed to determine who starts";
-				LOGGER.log(Level.WARNING, msg, ex);
-				Platform.runLater(() -> {
-					loadingDialog.close();
-					new Alert(Alert.AlertType.WARNING, msg).showAndWait();
-				});
-				return null;
-			});
-
-			// Display dialog while waiting for a partner
-			loadingDialog.initOwner(((Node)event.getTarget()).getScene().getWindow());
-			loadingDialog.initModality(Modality.WINDOW_MODAL);
-			loadingDialog.setContentText("Waiting for a player...");
-			ProgressIndicator progress = new ProgressIndicator();
-			loadingDialog.getDialogPane().setContent(progress);
-			loadingDialog.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL);
-			//TODO clean up some net code if the search was canceled
-			loadingDialog.showAndWait();
-			LOGGER.finer("After loadingDialog.showAndWait()");
-		} catch (IOException e) {
-			String msg = "Failed to establish a connection to server";
-			LOGGER.log(Level.WARNING, msg, e);
-			new Alert(Alert.AlertType.WARNING, msg).showAndWait();
-			loadingDialog.close();
-		}
-	}
-
 	@Override
 	public void stop() throws Exception {
 		LOGGER.fine("Stop called");
+		if (partner != null) {
+			if (!partner.isClosed()) {
+				partner.quit();
+			}
+			partner.close();
+		}
 	}
 }

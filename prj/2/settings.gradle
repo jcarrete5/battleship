@@ -1,3 +1,0 @@
-rootProject.name = 'battleship'
-include 'client', 'server', 'common'
-

@@ -1,4 +1,0 @@
-version = commonVersion
-jar {
-    archivesBaseName = "${appBaseName}Common"
-}

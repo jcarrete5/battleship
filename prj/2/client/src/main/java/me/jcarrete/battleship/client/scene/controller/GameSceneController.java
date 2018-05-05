@@ -8,6 +8,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 import me.jcarrete.battleship.client.BattleshipClient;
@@ -294,4 +295,13 @@ public class GameSceneController {
 			LOGGER.log(Level.WARNING, "Failed to send fire message", e);
 		}
 	}
+
+//	@FXML
+//	private void onClickCarrier(MouseEvent event) {
+//		event.consume();
+////		LOGGER.info(String.format("(getX(), getY()): (%f, %f)", event.getX(), event.getY()));
+////		LOGGER.info(String.format("(getSceneX(), getSceneY()): (%f, %f)", event.getSceneX(), event.getSceneY()));
+////		LOGGER.info(String.format("(getScreenX(), getScreenY()): (%f, %f)", event.getScreenX(), event.getScreenY()));
+//		LOGGER.info(String.format("(x, y): (%f, %f)", carrierView.getX(), carrierView.getY()));
+//	}
 }

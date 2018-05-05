@@ -34,7 +34,7 @@ public class MainMenuSceneController {
 	@FXML
 	private void onMultiPress(ActionEvent event) {
 		Dialog<Void> loadingDialog = new Dialog<>();
-		try (ServerConnection conn = ServerConnection.connectToGameServer(InetAddress.getLocalHost(), 10000)) {
+		try (ServerConnection conn = ServerConnection.connectToGameServer("jsonet.ddns.net", 10000)) {
 			conn.isHost().thenAccept(isHost ->
 				conn.findPartner(isHost).thenAccept(partner -> {
 					LOGGER.info("Found a partner with address " + partner.remoteAddressAndPortAsString());

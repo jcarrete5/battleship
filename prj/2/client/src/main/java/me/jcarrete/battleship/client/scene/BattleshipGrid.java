@@ -70,10 +70,12 @@ public class BattleshipGrid extends Canvas {
 			cellHighlights[targetPos[0]][targetPos[1]] = null;
 		}
 
+		untargetable.remove(toIndex(targetPos[0], targetPos[1]));
 		targetPos[0] = curRow;
 		targetPos[1] = curCol;
 
 		cellHighlights[curRow][curCol] = Color.color(1, 0.5, 0, 0.5);
+		untargetable.add(toIndex(targetPos[0], targetPos[1]));
 		draw();
 	}
 
@@ -86,16 +88,24 @@ public class BattleshipGrid extends Canvas {
 		// Ignore movement on bottom half
 		if (curRow >= ROWS / 2) {
 			if (!untargetable.contains(toIndex(lastPos[0], lastPos[1]))) {
-				cellHighlights[lastPos[0]][lastPos[1]] = null;
-				draw();
+				try {
+					cellHighlights[lastPos[0]][lastPos[1]] = null;
+					draw();
+				} catch (ArrayIndexOutOfBoundsException e) {
+					// Safely Ignore
+				}
 			}
 			return;
 		}
 		// Don't highlight cells which can't be targeted
 		if (untargetable.contains(toIndex(curRow, curCol))) {
 			if (!untargetable.contains(toIndex(lastPos[0], lastPos[1]))) {
-				cellHighlights[lastPos[0]][lastPos[1]] = null;
-				draw();
+				try {
+					cellHighlights[lastPos[0]][lastPos[1]] = null;
+					draw();
+				} catch (ArrayIndexOutOfBoundsException e) {
+					// Safely Ignore
+				}
 			}
 			return;
 		}
@@ -119,7 +129,14 @@ public class BattleshipGrid extends Canvas {
 
 	private void onMouseExited(MouseEvent event) {
 		if (lastPos[0] >= 0 && lastPos[1] >= 0 && !(lastPos[0] == targetPos[0] && lastPos[1] == targetPos[1])) {
-			cellHighlights[lastPos[0]][lastPos[1]] = null;
+			if (!untargetable.contains(toIndex(lastPos[0], lastPos[1]))) {
+				try {
+					cellHighlights[lastPos[0]][lastPos[1]] = null;
+					draw();
+				} catch (ArrayIndexOutOfBoundsException e) {
+					// Safely Ignore
+				}
+			}
 		}
 		draw();
 	}
@@ -219,6 +236,7 @@ public class BattleshipGrid extends Canvas {
 	}
 
 	public void resetTargetPosition() {
+		untargetable.remove(toIndex(targetPos[0], targetPos[1]));
 		targetPos[0] = -2;
 		targetPos[1] = -2;
 	}

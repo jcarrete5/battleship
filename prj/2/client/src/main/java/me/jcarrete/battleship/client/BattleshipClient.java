@@ -10,6 +10,7 @@ import me.jcarrete.battleship.common.logging.LogFileFormatter;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.logging.*;
 
 public class BattleshipClient extends Application {

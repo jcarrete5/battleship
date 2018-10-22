@@ -1,5 +1,4 @@
-.DS_Store
-workspace.xml
-out/
-*.ini
-*.class
+.gradle/
+.idea/
+build/
+logs/

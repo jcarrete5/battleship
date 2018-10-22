@@ -15,6 +15,8 @@ import java.util.logging.*;
 
 public class BattleshipClient extends Application {
 
+	public static String SERVER_HOSTNAME = "localhost";
+
 	private static MainMenuScene mainMenuScene;
 	private static GameScene gameScene;
 
